@@ -11,11 +11,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-private val RyderRed = Color(0xFFD32F2F)
+import common.ui.pages.components.RyderRed
 
 @Composable
-fun RegistrationPage() {
+fun RegistrationPage(onContinue: () -> Unit) {
 
     Column(
         modifier = Modifier
@@ -62,7 +61,7 @@ fun RegistrationPage() {
 
         // Register button
         Button(
-            onClick = {},
+            onClick = onContinue,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),

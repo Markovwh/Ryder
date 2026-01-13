@@ -1,34 +1,47 @@
 package common.ryder
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Scaffold
 import common.ui.pages.Homepage
+import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import common.ui.pages.LoginPage
+import common.ui.pages.MessagesPage
+import common.ui.pages.ProfilePage
+import common.ui.pages.RegistrationPage
+import common.ui.pages.SearchPage
+import ui.pages.components.NavBar
 
 @Composable
 fun RyderApp() {
 
-    // UI dizaina mainīgie
-    MaterialTheme(
-        colorScheme = lightColorScheme(
-            primary = Color(0xFF6200EE),
-            onPrimary = Color.White,
-            background = Color(0xFFF2F2F2)
-        )
-    ) {
+    var currentScreen by remember { mutableStateOf(Screen.Home) }
 
-        // Liek lapai aizpildīt visu ekrānu
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
+    Scaffold(
+        bottomBar = {
+            if (currentScreen !in listOf(Screen.Registration, Screen.Login)) {
+                NavBar(
+                    onHome = { currentScreen = Screen.Home },
+                    onSearch = { currentScreen = Screen.Search },
+                    onMessages = { currentScreen = Screen.Messages },
+                    onProfile = { currentScreen = Screen.Profile }
+                )
+            }
+        }
+    ) { padding ->
 
-            // Ielādē sākumlapu
-            Homepage()
+        when (currentScreen) {
+            Screen.Registration ->
+                RegistrationPage(onContinue = { currentScreen = Screen.Login })
+
+            Screen.Login ->
+                LoginPage(onLogin = { currentScreen = Screen.Home })
+
+            Screen.Home -> Homepage()
+            Screen.Search -> SearchPage()
+            Screen.Messages -> MessagesPage()
+            Screen.Profile -> ProfilePage()
         }
     }
 }

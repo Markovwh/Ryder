@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.sp
 private val RyderRed = Color(0xFFD32F2F)
 
 @Composable
-fun LoginPage() {
+fun LoginPage(onLogin: () -> Unit) {
 
     Column(
         modifier = Modifier
@@ -57,7 +57,7 @@ fun LoginPage() {
 
         // Login button
         Button(
-            onClick = {},
+            onClick = onLogin,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),

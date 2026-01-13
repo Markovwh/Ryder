@@ -25,11 +25,10 @@ fun Homepage() {
     Scaffold(
         bottomBar = {
             NavBar(
-                onHomeClick = {},
-                onSearchClick = {},
-                onCreateClick = {},
-                onMessagesClick = {},
-                onProfileClick = {}
+                onHome = { },
+                onSearch = { },
+                onMessages = { },
+                onProfile = { }
             )
         }
     ) { paddingValues ->
