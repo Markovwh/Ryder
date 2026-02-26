@@ -12,24 +12,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ui.pages.components.NavBar
 import common.ui.pages.components.PostCard
+import ui.pages.components.NavBar
 
-// Galvenā prgrammas akcenta krāsa - sarkana
 private val RyderRed = Color(0xFFD32F2F)
 
 @Composable
-fun Homepage() {
-
-    // Nosaka navigācijas joslas elementu darbību
+fun Homepage(
+    onLoginClick: () -> Unit,
+    onRegisterClick: () -> Unit
+) {
     Scaffold(
         bottomBar = {
-            NavBar(
-                onHome = { },
-                onSearch = { },
-                onMessages = { },
-                onProfile = { }
-            )
         }
     ) { paddingValues ->
         Column(
@@ -38,17 +32,51 @@ fun Homepage() {
                 .padding(paddingValues)
                 .background(Color.Black)
         ) {
-            // Lietotnes nosaukums ekrāna augšā
-            Text(
-                text = "Ryder",
-                color = RyderRed,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .padding(16.dp)
-            )
 
-            // Placeholder feed
+            // Top bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Ryder",
+                    color = RyderRed,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+
+                TextButton(onClick = onLoginClick) {
+                    Text(
+                        text = "Login",
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                    onClick = onRegisterClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RyderRed
+                    ),
+                    contentPadding = PaddingValues(
+                        horizontal = 16.dp,
+                        vertical = 6.dp
+                    )
+                ) {
+                    Text(
+                        text = "Sign Up",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Feed
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 80.dp)
@@ -61,7 +89,7 @@ fun Homepage() {
     }
 }
 
-public fun placeholderPosts(): List<String> {
+fun placeholderPosts(): List<String> {
     return listOf(
         "Just finished a 200-mile ride through the canyon. Unreal views.",
         "Anyone riding out this weekend?",
