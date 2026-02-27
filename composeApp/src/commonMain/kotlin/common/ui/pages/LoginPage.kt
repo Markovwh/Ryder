@@ -20,15 +20,15 @@ import common.ui.pages.components.RyderRed
 @Composable
 fun LoginPage(
     backendError: String? = null,
-    onLogin: (email: String, password: String) -> Unit,
+    onLogin: (email: String, password: String, rememberMe: Boolean) -> Unit,
     onForgotPassword: (email: String) -> Unit,
-    onRegisterClick: () -> Unit,      // callback for sign up
-    onContinueAsGuest: () -> Unit     // callback for guest
+    onRegisterClick: () -> Unit,
+    onContinueAsGuest: () -> Unit
 ) {
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
+    var rememberMe by remember { mutableStateOf(false) }
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
 
@@ -106,7 +106,25 @@ fun LoginPage(
         )
         passwordError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(12.dp))
+
+        // Remember Me checkbox
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .padding(vertical = 8.dp)
+        ) {
+            Checkbox(
+                checked = rememberMe,
+                onCheckedChange = { rememberMe = it },
+                colors = CheckboxDefaults.colors(checkedColor = RyderRed)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "Remember me", color = Color.White)
+        }
+
+        Spacer(Modifier.height(12.dp))
 
         // Login button
         Button(
@@ -114,7 +132,7 @@ fun LoginPage(
                 var valid = true
                 if (email.isBlank()) { emailError = "Email is required"; valid = false }
                 if (password.isBlank()) { passwordError = "Password is required"; valid = false }
-                if (valid) onLogin(email.trim(), password)
+                if (valid) onLogin(email.trim(), password, rememberMe)  // pass rememberMe
             },
             colors = ButtonDefaults.buttonColors(
                 containerColor = RyderRed,

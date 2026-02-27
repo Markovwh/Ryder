@@ -16,6 +16,7 @@ fun RyderApp() {
     val authService = provideAuthService()
     val scope = rememberCoroutineScope()
 
+
     var currentScreen: Screen by remember { mutableStateOf(Screen.Login) }
     var authError by remember { mutableStateOf<String?>(null) }
     var isGuest by remember { mutableStateOf(false) } // track guest mode
@@ -74,12 +75,13 @@ fun RyderApp() {
 
             Screen.Login -> LoginPage(
                 backendError = authError,
-                onLogin = { email, password ->
+                onLogin = { email, password, rememberMe ->
                     scope.launch {
                         val result = authService.login(email, password)
+
                         if (result.isSuccess) {
+                            // TODO: handle rememberMe, e.g., store in DataStore
                             authError = null
-                            isGuest = false
                             currentScreen = Screen.Home
                         } else {
                             authError = result.exceptionOrNull()?.message
@@ -89,14 +91,15 @@ fun RyderApp() {
                 onForgotPassword = { email ->
                     scope.launch {
                         val result = authService.sendPasswordReset(email)
-                        authError = if (result.isSuccess) "Password reset email sent." else result.exceptionOrNull()?.message
+                        authError = if (result.isSuccess) {
+                            "Password reset email sent."
+                        } else {
+                            result.exceptionOrNull()?.message
+                        }
                     }
                 },
                 onRegisterClick = { currentScreen = Screen.Registration },
-                onContinueAsGuest = {
-                    isGuest = true
-                    currentScreen = Screen.Home
-                }
+                onContinueAsGuest = { currentScreen = Screen.Home }
             )
 
             Screen.Home -> Homepage(
