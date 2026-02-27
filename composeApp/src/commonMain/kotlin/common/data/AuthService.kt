@@ -21,4 +21,6 @@ interface AuthService {
     suspend fun getUserData(uid: String): Result<User>
 
     suspend fun updateUserData(user: User): Result<Unit>
+
+    fun logout()
 }

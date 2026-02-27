@@ -1,6 +1,7 @@
 package common.ui.pages
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -13,6 +14,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
 import common.ui.pages.components.RyderRed
 
 @Composable
@@ -24,7 +27,8 @@ fun RegistrationPage(
         nickname: String,
         firstName: String,
         lastName: String
-    ) -> Unit
+    ) -> Unit,
+    onLoginClick: () -> Unit
 ) {
 
     var email by remember { mutableStateOf("") }
@@ -241,5 +245,19 @@ fun RegistrationPage(
         ) {
             Text("Create Account")
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = buildAnnotatedString {
+                append("Already registered? Sign in instead")
+            },
+            color = RyderRed,
+            fontSize = 14.sp,
+            textDecoration = TextDecoration.Underline,
+            modifier = Modifier.clickable {
+                onLoginClick()
+            }
+        )
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -20,7 +21,9 @@ import common.ui.pages.components.RyderRed
 fun LoginPage(
     backendError: String? = null,
     onLogin: (email: String, password: String) -> Unit,
-    onForgotPassword: (email: String) -> Unit
+    onForgotPassword: (email: String) -> Unit,
+    onRegisterClick: () -> Unit,      // callback for sign up
+    onContinueAsGuest: () -> Unit     // callback for guest
 ) {
 
     var email by remember { mutableStateOf("") }
@@ -48,6 +51,7 @@ fun LoginPage(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
+        // Title
         Text(
             text = "Login",
             color = RyderRed,
@@ -55,8 +59,20 @@ fun LoginPage(
             fontWeight = FontWeight.Bold
         )
 
+        Spacer(Modifier.height(8.dp))
+
+        // Sign up link below title, underlined
+        Text(
+            text = "Don't have an account? Sign up.",
+            color = RyderRed,
+            fontSize = 14.sp,
+            textDecoration = TextDecoration.Underline,
+            modifier = Modifier.clickable { onRegisterClick() }
+        )
+
         Spacer(Modifier.height(24.dp))
 
+        // Email field
         OutlinedTextField(
             value = email,
             onValueChange = {
@@ -70,13 +86,11 @@ fun LoginPage(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-
-        emailError?.let {
-            Text(it, color = Color.Red, fontSize = 12.sp)
-        }
+        emailError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
 
         Spacer(Modifier.height(12.dp))
 
+        // Password field
         OutlinedTextField(
             value = password,
             onValueChange = {
@@ -90,31 +104,17 @@ fun LoginPage(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-
-        passwordError?.let {
-            Text(it, color = Color.Red, fontSize = 12.sp)
-        }
+        passwordError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
 
         Spacer(Modifier.height(24.dp))
 
+        // Login button
         Button(
             onClick = {
-
                 var valid = true
-
-                if (email.isBlank()) {
-                    emailError = "Email is required"
-                    valid = false
-                }
-
-                if (password.isBlank()) {
-                    passwordError = "Password is required"
-                    valid = false
-                }
-
-                if (valid) {
-                    onLogin(email.trim(), password)
-                }
+                if (email.isBlank()) { emailError = "Email is required"; valid = false }
+                if (password.isBlank()) { passwordError = "Password is required"; valid = false }
+                if (valid) onLogin(email.trim(), password)
             },
             colors = ButtonDefaults.buttonColors(
                 containerColor = RyderRed,
@@ -127,6 +127,21 @@ fun LoginPage(
 
         Spacer(Modifier.height(12.dp))
 
+        // Continue as Guest button
+        Button(
+            onClick = { onContinueAsGuest() },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Gray,
+                contentColor = Color.White
+            ),
+            modifier = Modifier.fillMaxWidth(0.85f)
+        ) {
+            Text("Continue as Guest")
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Forgot password link
         Text(
             text = "Forgot password?",
             color = RyderRed,

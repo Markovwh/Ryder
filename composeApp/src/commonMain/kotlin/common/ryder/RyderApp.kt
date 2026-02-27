@@ -16,15 +16,9 @@ fun RyderApp() {
     val authService = provideAuthService()
     val scope = rememberCoroutineScope()
 
-    val firebaseUser = authService.getCurrentUserId()
-
-    var currentScreen by remember {
-        mutableStateOf(
-            if (firebaseUser != null) Screen.Home else Screen.Login
-        )
-    }
-
+    var currentScreen: Screen by remember { mutableStateOf(Screen.Login) }
     var authError by remember { mutableStateOf<String?>(null) }
+    var isGuest by remember { mutableStateOf(false) } // track guest mode
 
     Scaffold(
         bottomBar = {
@@ -33,9 +27,28 @@ fun RyderApp() {
                     currentScreen = currentScreen,
                     onHome = { currentScreen = Screen.Home },
                     onSearch = { currentScreen = Screen.Search },
-                    onAddPost = { currentScreen = Screen.CreatePost }, // <-- new screen
-                    onMessages = { currentScreen = Screen.Messages },
-                    onProfile = { currentScreen = Screen.Profile }
+                    onAddPost = {
+                        // Only allow if logged in
+                        if (!isGuest && authService.getCurrentUserId() != null) {
+                            currentScreen = Screen.CreatePost
+                        } else {
+                            currentScreen = Screen.Login
+                        }
+                    },
+                    onMessages = {
+                        if (!isGuest && authService.getCurrentUserId() != null) {
+                            currentScreen = Screen.Messages
+                        } else {
+                            currentScreen = Screen.Login
+                        }
+                    },
+                    onProfile = {
+                        if (!isGuest && authService.getCurrentUserId() != null) {
+                            currentScreen = Screen.Profile
+                        } else {
+                            currentScreen = Screen.Login
+                        }
+                    }
                 )
             }
         }
@@ -46,36 +59,27 @@ fun RyderApp() {
             Screen.Registration -> RegistrationPage(
                 backendError = authError,
                 onRegister = { email, password, nickname, firstName, lastName ->
-
                     scope.launch {
-
-                        val result = authService.register(
-                            email,
-                            password,
-                            nickname,
-                            firstName,
-                            lastName
-                        )
-
+                        val result = authService.register(email, password, nickname, firstName, lastName)
                         if (result.isSuccess) {
                             authError = null
-                            currentScreen = Screen.Home
+                            currentScreen = Screen.Login
                         } else {
                             authError = result.exceptionOrNull()?.message
                         }
                     }
-                }
+                },
+                onLoginClick = { currentScreen = Screen.Login }
             )
 
             Screen.Login -> LoginPage(
                 backendError = authError,
                 onLogin = { email, password ->
-
                     scope.launch {
                         val result = authService.login(email, password)
-
                         if (result.isSuccess) {
                             authError = null
+                            isGuest = false
                             currentScreen = Screen.Home
                         } else {
                             authError = result.exceptionOrNull()?.message
@@ -83,27 +87,68 @@ fun RyderApp() {
                     }
                 },
                 onForgotPassword = { email ->
-
                     scope.launch {
                         val result = authService.sendPasswordReset(email)
-
-                        authError = if (result.isSuccess) {
-                            "Password reset email sent."
-                        } else {
-                            result.exceptionOrNull()?.message
-                        }
+                        authError = if (result.isSuccess) "Password reset email sent." else result.exceptionOrNull()?.message
                     }
+                },
+                onRegisterClick = { currentScreen = Screen.Registration },
+                onContinueAsGuest = {
+                    isGuest = true
+                    currentScreen = Screen.Home
                 }
             )
 
             Screen.Home -> Homepage(
                 onLoginClick = { currentScreen = Screen.Login },
-                onRegisterClick = { currentScreen = Screen.Registration }
+                onRegisterClick = { currentScreen = Screen.Registration },
+                isUserLoggedIn = authService.getCurrentUserId() != null && !isGuest
             )
 
             Screen.Search -> SearchPage()
-            Screen.Messages -> MessagesPage()
-            Screen.Profile -> ProfilePage(authService = provideAuthService())
+
+            Screen.Messages -> {
+                // redirect guest to login
+                if (!isGuest && authService.getCurrentUserId() != null) {
+                    MessagesPage()
+                } else {
+                    currentScreen = Screen.Login
+                }
+            }
+
+            Screen.Profile -> {
+                if (!isGuest && authService.getCurrentUserId() != null) {
+                    ProfilePage(
+                        authService = authService,
+                        onLogout = {
+                            authService.logout()
+                            isGuest = false
+                            currentScreen = Screen.Login
+                        }
+                    )
+                } else {
+                    currentScreen = Screen.Login
+                }
+            }
+
+            Screen.CreatePost -> {
+                val currentUserId = authService.getCurrentUserId()
+                if (!isGuest && currentUserId != null) {
+                    val dummyUser = common.model.User(
+                        nickname = "CurrentUser",
+                        firstName = "First",
+                        lastName = "Last",
+                        profilePicture = null
+                    )
+                    CreatePostScreen(
+                        currentUser = dummyUser,
+                        onPostCreated = { currentScreen = Screen.Home },
+                        onCancel = { currentScreen = Screen.Home }
+                    )
+                } else {
+                    currentScreen = Screen.Login
+                }
+            }
         }
     }
 }

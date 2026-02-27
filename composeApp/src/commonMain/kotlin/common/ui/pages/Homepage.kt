@@ -12,28 +12,42 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import common.data.PostRepository
 import common.ui.pages.components.PostCard
 import ui.pages.components.NavBar
+import common.model.Post
+import common.model.User
+import androidx.compose.runtime.*
 
 private val RyderRed = Color(0xFFD32F2F)
 
 @Composable
 fun Homepage(
     onLoginClick: () -> Unit,
-    onRegisterClick: () -> Unit
+    onRegisterClick: () -> Unit,
+    isUserLoggedIn: Boolean
 ) {
-    Scaffold(
-        bottomBar = {
+
+    val repository = remember { PostRepository() }
+    var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        repository.listenToPosts {
+            posts = it
         }
+    }
+
+    Scaffold(
+        containerColor = Color.Black
     ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.Black)
         ) {
 
-            // Top bar
+            // Top Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -48,52 +62,32 @@ fun Homepage(
                     modifier = Modifier.weight(1f)
                 )
 
-                TextButton(onClick = onLoginClick) {
-                    Text(
-                        text = "Login",
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
-                }
+                if (!isUserLoggedIn) {  // ← only show if not logged in
+                    TextButton(onClick = onLoginClick) {
+                        Text("Login", color = Color.White)
+                    }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                Button(
-                    onClick = onRegisterClick,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = RyderRed
-                    ),
-                    contentPadding = PaddingValues(
-                        horizontal = 16.dp,
-                        vertical = 6.dp
-                    )
-                ) {
-                    Text(
-                        text = "Sign Up",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Button(
+                        onClick = onRegisterClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = RyderRed
+                        )
+                    ) {
+                        Text("Sign Up")
+                    }
                 }
             }
 
             // Feed
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 80.dp)
+                modifier = Modifier.fillMaxSize()
             ) {
-                items(placeholderPosts()) { post ->
+                items(posts) { post ->
                     PostCard(post)
                 }
             }
         }
     }
-}
-
-fun placeholderPosts(): List<String> {
-    return listOf(
-        "Just finished a 200-mile ride through the canyon. Unreal views.",
-        "Anyone riding out this weekend?",
-        "New exhaust installed. Sounds mean.",
-        "Looking for group rides near Austin."
-    )
 }

@@ -125,6 +125,10 @@ class AuthServiceImplAndroid : AuthService {
             Result.failure(e)
         }
     }
+
+    override fun logout() {
+        auth.signOut()
+    }
 }
 
 actual fun provideAuthService(): AuthService = AuthServiceImplAndroid()
