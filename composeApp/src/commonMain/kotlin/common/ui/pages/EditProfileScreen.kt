@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -202,7 +203,8 @@ fun EditProfileScreen(
 
             // Nickname
             OutlinedTextField(
-                value = nickname,
+                shape = RoundedCornerShape(12.dp),
+                value =nickname,
                 onValueChange = { nickname = it; nicknameError = null },
                 label = { Text("Segvārds") },
                 isError = nicknameError != null,
@@ -214,7 +216,8 @@ fun EditProfileScreen(
 
             // First name
             OutlinedTextField(
-                value = firstName,
+                shape = RoundedCornerShape(12.dp),
+                value =firstName,
                 onValueChange = { firstName = it },
                 label = { Text("Vārds") },
                 colors = textFieldColors,
@@ -224,7 +227,8 @@ fun EditProfileScreen(
 
             // Last name
             OutlinedTextField(
-                value = lastName,
+                shape = RoundedCornerShape(12.dp),
+                value =lastName,
                 onValueChange = { lastName = it },
                 label = { Text("Uzvārds") },
                 colors = textFieldColors,
@@ -234,7 +238,8 @@ fun EditProfileScreen(
 
             // Bio
             OutlinedTextField(
-                value = bio,
+                shape = RoundedCornerShape(12.dp),
+                value =bio,
                 onValueChange = { bio = it },
                 label = { Text("Par sevi") },
                 placeholder = { Text("Pastāsti par sevi...", color = Color.Gray) },
@@ -247,7 +252,8 @@ fun EditProfileScreen(
 
             // Bike
             OutlinedTextField(
-                value = bike,
+                shape = RoundedCornerShape(12.dp),
+                value =bike,
                 onValueChange = { bike = it },
                 label = { Text("Motocikls") },
                 placeholder = { Text("piem. Honda CB500F", color = Color.Gray) },

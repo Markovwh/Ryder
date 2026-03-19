@@ -180,6 +180,7 @@ fun CreatePostScreen(
 
             // Description field
             OutlinedTextField(
+                shape = RoundedCornerShape(12.dp),
                 value = description,
                 onValueChange = { description = it },
                 placeholder = { Text("Raksti ko notiek...", color = Color.Gray) },
