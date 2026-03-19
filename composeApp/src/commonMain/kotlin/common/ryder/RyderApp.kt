@@ -7,6 +7,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import common.ui.pages.*
 import common.data.provideAuthService
 import common.data.UserPreferences
+import common.model.User
 import kotlinx.coroutines.launch
 import ui.pages.components.NavBar
 import common.ui.pages.Screen
@@ -20,12 +21,22 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
     var currentScreen: Screen by remember { mutableStateOf(Screen.Login) }
     var authError by remember { mutableStateOf<String?>(null) }
     var isGuest by remember { mutableStateOf(false) }
+    var currentUser by remember { mutableStateOf<User?>(null) }
+
+    fun loadCurrentUser() {
+        scope.launch {
+            val uid = authService.getCurrentUserId() ?: return@launch
+            val result = authService.getUserData(uid)
+            if (result.isSuccess) currentUser = result.getOrNull()
+        }
+    }
 
     // On startup: if remember me was enabled and Firebase still has an active session, skip login
     LaunchedEffect(Unit) {
         if (userPreferences != null) {
             val rememberMe = userPreferences.getRememberMe()
             if (rememberMe && authService.getCurrentUserId() != null) {
+                loadCurrentUser()
                 currentScreen = Screen.Home
             }
         }
@@ -33,7 +44,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
 
     Scaffold(
         bottomBar = {
-            if (currentScreen !in listOf(Screen.Registration, Screen.Login)) {
+            if (currentScreen !in listOf(Screen.Registration, Screen.Login, Screen.EditProfile)) {
                 NavBar(
                     currentScreen = currentScreen,
                     onHome = { currentScreen = Screen.Home },
@@ -62,7 +73,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                 )
             }
         }
-    ) { padding ->
+    ) { _ ->
 
         when (currentScreen) {
 
@@ -89,6 +100,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                         val result = authService.login(email, password)
                         if (result.isSuccess) {
                             userPreferences?.setRememberMe(rememberMe)
+                            loadCurrentUser()
                             authError = null
                             currentScreen = Screen.Home
                         } else {
@@ -134,13 +146,30 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     ProfilePage(
                         authService = authService,
                         onLogout = {
-                            scope.launch {
-                                userPreferences?.setRememberMe(false)
-                            }
+                            scope.launch { userPreferences?.setRememberMe(false) }
                             authService.logout()
+                            currentUser = null
                             isGuest = false
                             currentScreen = Screen.Login
-                        }
+                        },
+                        onEditProfile = { currentScreen = Screen.EditProfile }
+                    )
+                } else {
+                    currentScreen = Screen.Login
+                }
+            }
+
+            Screen.EditProfile -> {
+                val user = currentUser
+                if (!isGuest && authService.getCurrentUserId() != null && user != null) {
+                    EditProfileScreen(
+                        user = user,
+                        authService = authService,
+                        onSaved = { updatedUser: User ->
+                            currentUser = updatedUser
+                            currentScreen = Screen.Profile
+                        },
+                        onCancel = { currentScreen = Screen.Profile }
                     )
                 } else {
                     currentScreen = Screen.Login
@@ -148,17 +177,11 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
             }
 
             Screen.CreatePost -> {
-                val currentUserId = authService.getCurrentUserId()
-                if (!isGuest && currentUserId != null) {
-                    val dummyUser = common.model.User(
-                        nickname = "CurrentUser",
-                        firstName = "First",
-                        lastName = "Last",
-                        profilePicture = null
-                    )
+                val user = currentUser
+                if (!isGuest && authService.getCurrentUserId() != null && user != null) {
                     CreatePostScreen(
-                        currentUser = dummyUser,
-                        onPostCreated = { currentScreen = Screen.Home },
+                        currentUser = user,
+                        onPostCreated = { currentScreen = Screen.Profile },
                         onCancel = { currentScreen = Screen.Home }
                     )
                 } else {

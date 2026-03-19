@@ -8,4 +8,5 @@ sealed class Screen {
     object Registration : Screen()
     object Login : Screen()
     object CreatePost : Screen()
+    object EditProfile : Screen()
 }

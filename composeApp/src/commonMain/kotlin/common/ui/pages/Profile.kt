@@ -29,7 +29,8 @@ private val RyderRed = Color(0xFFD32F2F)
 @Composable
 fun ProfilePage(
     authService: AuthService,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onEditProfile: () -> Unit
 ) {
     var user by remember { mutableStateOf<User?>(null) }
     val userPosts = remember { mutableStateListOf<String>() }
@@ -57,23 +58,26 @@ fun ProfilePage(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        // ✅ Use TopAppBar with colors parameter
         TopAppBar(
-            title = { Text("Profile", color = Color.White) },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Black
-            ),
+            title = { Text(user?.nickname ?: "Profils", color = Color.White) },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black),
             actions = {
                 IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Settings", tint = Color.White)
+                    Icon(Icons.Default.MoreVert, contentDescription = "Iestatījumi", tint = Color.White)
                 }
-
                 DropdownMenu(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Logout") },
+                        text = { Text("Rediģēt profilu") },
+                        onClick = {
+                            showMenu = false
+                            onEditProfile()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Iziet") },
                         onClick = {
                             showMenu = false
                             authService.logout()
@@ -84,7 +88,6 @@ fun ProfilePage(
             }
         )
 
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -93,7 +96,6 @@ fun ProfilePage(
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             item {
-                // Profile info
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
@@ -103,7 +105,7 @@ fun ProfilePage(
                         painter = rememberAsyncImagePainter(
                             model = user?.profilePicture ?: "https://picsum.photos/200"
                         ),
-                        contentDescription = "Profile Picture",
+                        contentDescription = "Profila bilde",
                         modifier = Modifier
                             .size(100.dp)
                             .clip(CircleShape)
@@ -113,9 +115,9 @@ fun ProfilePage(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Username
+                    // Nickname
                     Text(
-                        text = user?.nickname ?: "Username",
+                        text = user?.nickname ?: "Lietotājvārds",
                         color = Color.White,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
@@ -124,36 +126,75 @@ fun ProfilePage(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     // Full name
-                    Text(
-                        text = "${user?.firstName ?: ""} ${user?.lastName ?: ""}",
-                        color = Color.Gray,
-                        fontSize = 16.sp
-                    )
+                    val fullName = "${user?.firstName ?: ""} ${user?.lastName ?: ""}".trim()
+                    if (fullName.isNotEmpty()) {
+                        Text(text = fullName, color = Color.Gray, fontSize = 16.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    // Bike
+                    val bike = user?.bike.orEmpty()
+                    if (bike.isNotEmpty()) {
+                        Text(
+                            text = "🏍 $bike",
+                            color = Color.LightGray,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
+                    // Bio
+                    val bio = user?.bio.orEmpty()
+                    if (bio.isNotEmpty()) {
+                        Text(
+                            text = bio,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .fillMaxWidth(0.85f)
+                                .padding(vertical = 4.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Privacy badge
+                    val privacy = user?.profilePrivacy.orEmpty()
+                    if (privacy.isNotEmpty()) {
+                        Text(
+                            text = privacy,
+                            color = Color.Gray,
+                            fontSize = 12.sp,
+                            modifier = Modifier
+                                .background(Color.DarkGray, androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
 
                     // Stats row
                     Row(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        ProfileStat(count = "120", label = "Posts")
-                        ProfileStat(count = "450", label = "Followers")
-                        ProfileStat(count = "300", label = "Following")
+                        ProfileStat(count = "120", label = "Ziņas")
+                        ProfileStat(count = "450", label = "Sekotāji")
+                        ProfileStat(count = "300", label = "Seko")
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Edit Profile button
                     Button(
-                        onClick = { /* TODO: navigate to edit */ },
+                        onClick = onEditProfile,
                         colors = ButtonDefaults.buttonColors(containerColor = RyderRed),
                         modifier = Modifier
                             .fillMaxWidth(0.6f)
                             .height(40.dp)
                     ) {
                         Text(
-                            text = "Edit Profile",
+                            text = "Rediģēt profilu",
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
@@ -174,7 +215,7 @@ fun ProfilePage(
                     for (postUrl in rowPosts) {
                         Image(
                             painter = rememberAsyncImagePainter(postUrl),
-                            contentDescription = "User Post",
+                            contentDescription = "Lietotāja ziņa",
                             modifier = Modifier
                                 .weight(1f)
                                 .aspectRatio(1f)
