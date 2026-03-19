@@ -43,11 +43,7 @@ fun NavBar(
             onClick = onSearch
         )
 
-        NavItem(
-            selected = false,
-            icon = Icons.Default.Add,
-            onClick = onAddPost
-        )
+        AddPostButton(onClick = onAddPost)
 
         NavItem(
             selected = currentScreen == Screen.Messages,
@@ -60,6 +56,31 @@ fun NavBar(
             icon = Icons.Default.Person,
             onClick = onProfile
         )
+    }
+}
+
+@Composable
+private fun RowScope.AddPostButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .background(RyderRed, CircleShape)
+                .clickable { onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Jauna ziņa",
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+        }
     }
 }
 

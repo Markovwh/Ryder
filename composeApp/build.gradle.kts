@@ -30,6 +30,16 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+
+            implementation("com.google.firebase:firebase-auth-ktx:23.1.0")
+            implementation("com.google.firebase:firebase-firestore-ktx:25.0.0")
+            implementation("com.google.firebase:firebase-storage-ktx:21.0.0")
+            implementation("androidx.datastore:datastore-preferences:1.1.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+            implementation("io.coil-kt:coil-compose:2.4.0")
+
+            val nav_version = "2.9.6"
+            implementation("androidx.navigation:navigation-compose:$nav_version")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -76,15 +86,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.firebase.database)
-    debugImplementation(compose.uiTooling)
-    implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-firestore")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
     implementation("io.coil-kt:coil-compose:2.4.0")
-
-    val nav_version = "2.9.6"
-    implementation("androidx.navigation:navigation-compose:$nav_version")
 }
 
