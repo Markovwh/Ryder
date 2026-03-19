@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import common.data.UserPreferences
 import common.ryder.RyderApp
 
 class MainActivity : ComponentActivity() {
@@ -13,8 +14,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        val userPreferences = UserPreferences(this)
+
         setContent {
-            RyderApp()
+            RyderApp(userPreferences = userPreferences)
         }
     }
 }

@@ -53,7 +53,7 @@ fun LoginPage(
 
         // Title
         Text(
-            text = "Login",
+            text = "Pieslēgties",
             color = RyderRed,
             fontSize = 34.sp,
             fontWeight = FontWeight.Bold
@@ -63,7 +63,7 @@ fun LoginPage(
 
         // Sign up link below title, underlined
         Text(
-            text = "Don't have an account? Sign up.",
+            text = "Nav konta? Reģistrēties.",
             color = RyderRed,
             fontSize = 14.sp,
             textDecoration = TextDecoration.Underline,
@@ -79,7 +79,7 @@ fun LoginPage(
                 email = it
                 emailError = null
             },
-            label = { Text("Email") },
+            label = { Text("E-pasts") },
             isError = emailError != null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             colors = textFieldColors,
@@ -97,7 +97,7 @@ fun LoginPage(
                 password = it
                 passwordError = null
             },
-            label = { Text("Password") },
+            label = { Text("Parole") },
             isError = passwordError != null,
             visualTransformation = PasswordVisualTransformation(),
             colors = textFieldColors,
@@ -121,7 +121,7 @@ fun LoginPage(
                 colors = CheckboxDefaults.colors(checkedColor = RyderRed)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Remember me", color = Color.White)
+            Text(text = "Atcerēties mani", color = Color.White)
         }
 
         Spacer(Modifier.height(12.dp))
@@ -130,8 +130,8 @@ fun LoginPage(
         Button(
             onClick = {
                 var valid = true
-                if (email.isBlank()) { emailError = "Email is required"; valid = false }
-                if (password.isBlank()) { passwordError = "Password is required"; valid = false }
+                if (email.isBlank()) { emailError = "E-pasts ir obligāts"; valid = false }
+                if (password.isBlank()) { passwordError = "Parole ir obligāta"; valid = false }
                 if (valid) onLogin(email.trim(), password, rememberMe)  // pass rememberMe
             },
             colors = ButtonDefaults.buttonColors(
@@ -140,7 +140,7 @@ fun LoginPage(
             ),
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
-            Text("Log In")
+            Text("Pieslēgties")
         }
 
         Spacer(Modifier.height(12.dp))
@@ -154,21 +154,21 @@ fun LoginPage(
             ),
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
-            Text("Continue as Guest")
+            Text("Turpināt kā viesis")
         }
 
         Spacer(Modifier.height(12.dp))
 
         // Forgot password link
         Text(
-            text = "Forgot password?",
+            text = "Aizmirsāt paroli?",
             color = RyderRed,
             fontSize = 14.sp,
             modifier = Modifier.clickable {
                 if (email.isNotBlank()) {
                     onForgotPassword(email.trim())
                 } else {
-                    emailError = "Enter your email to reset password"
+                    emailError = "Ievadiet e-pastu, lai atiestatītu paroli"
                 }
             }
         )
