@@ -11,7 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,20 +26,35 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
+import common.data.EventRepository
+import common.data.GroupRepository
 import common.data.MessageRepository
 import common.model.Conversation
+import common.model.Event
+import common.model.Group
 import common.model.User
 import common.ui.pages.components.RyderRed
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 @Composable
 fun MessagesPage(
     currentUser: User?,
-    onOpenChat: (Screen.Chat) -> Unit
+    onOpenChat: (Screen.Chat) -> Unit,
+    onOpenGroup: (String) -> Unit,
+    onCreateGroup: () -> Unit,
+    onOpenEvent: (String) -> Unit,
+    onCreateEvent: () -> Unit
 ) {
     val repo = remember { MessageRepository() }
+    val groupRepo = remember { GroupRepository() }
+    val eventRepo = remember { EventRepository() }
     var conversations by remember { mutableStateOf<List<Conversation>>(emptyList()) }
+    var groups by remember { mutableStateOf<List<Group>>(emptyList()) }
+    var events by remember { mutableStateOf<List<Event>>(emptyList()) }
+    var selectedTab by remember { mutableStateOf(0) }
     var showNewChat by remember { mutableStateOf(false) }
 
     DisposableEffect(currentUser?.uid) {
@@ -52,72 +67,198 @@ fun MessagesPage(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
+    LaunchedEffect(selectedTab, currentUser?.uid) {
+        val uid = currentUser?.uid ?: return@LaunchedEffect
+        when (selectedTab) {
+            1 -> groups = try { groupRepo.getGroupsForUser(uid) } catch (_: Exception) { emptyList() }
+            2 -> events = try { eventRepo.getEvents() } catch (_: Exception) { emptyList() }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Text(
                 text = "Ziņas",
                 color = RyderRed,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(24.dp)
+                modifier = Modifier.padding(start = 24.dp, top = 20.dp, bottom = 12.dp)
             )
-            HorizontalDivider(color = Color(0xFF1E1E1E))
 
-            if (conversations.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = 80.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Nav sarunu. Sāc jaunu!",
-                        color = Color.Gray,
-                        fontSize = 14.sp
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = Color.Black,
+                contentColor = RyderRed,
+                divider = {}
+            ) {
+                listOf("Ziņas", "Grupas", "Notikumi").forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        selectedContentColor = RyderRed,
+                        unselectedContentColor = Color.Gray,
+                        text = {
+                            Text(
+                                title,
+                                fontWeight = if (selectedTab == index) FontWeight.SemiBold else FontWeight.Normal,
+                                fontSize = 14.sp
+                            )
+                        }
                     )
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    items(conversations, key = { it.id }) { conv ->
-                        val otherId = conv.participants.firstOrNull { it != currentUser?.uid } ?: ""
-                        val otherNickname = conv.participantNicknames[otherId] ?: "Lietotājs"
-                        val otherPicture = conv.participantPictures[otherId]?.takeIf { it.isNotEmpty() }
-                        ConversationRow(
-                            nickname = otherNickname,
-                            picture = otherPicture,
-                            lastMessage = conv.lastMessage,
-                            lastUpdated = conv.lastUpdated,
-                            onClick = {
-                                onOpenChat(
-                                    Screen.Chat(
-                                        conversationId = conv.id,
-                                        otherUserId = otherId,
-                                        otherUserNickname = otherNickname,
-                                        otherUserPicture = otherPicture
-                                    )
+            }
+
+            HorizontalDivider(color = Color(0xFF1E1E1E))
+
+            when (selectedTab) {
+                0 -> {
+                    if (conversations.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize().padding(bottom = 80.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Nav sarunu. Sāc jaunu!", color = Color.Gray, fontSize = 14.sp)
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 80.dp)
+                        ) {
+                            items(conversations, key = { it.id }) { conv ->
+                                val otherId = conv.participants.firstOrNull { it != currentUser?.uid } ?: ""
+                                val otherNickname = conv.participantNicknames[otherId] ?: "Lietotājs"
+                                val otherPicture = conv.participantPictures[otherId]?.takeIf { it.isNotEmpty() }
+                                ConversationRow(
+                                    nickname = otherNickname,
+                                    picture = otherPicture,
+                                    lastMessage = conv.lastMessage,
+                                    lastUpdated = conv.lastUpdated,
+                                    onClick = {
+                                        onOpenChat(
+                                            Screen.Chat(
+                                                conversationId = conv.id,
+                                                otherUserId = otherId,
+                                                otherUserNickname = otherNickname,
+                                                otherUserPicture = otherPicture
+                                            )
+                                        )
+                                    }
                                 )
                             }
-                        )
+                        }
+                    }
+                }
+
+                1 -> {
+                    if (groups.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize().padding(bottom = 80.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("Nav grupu", color = Color.Gray, fontSize = 14.sp)
+                                Spacer(Modifier.height(8.dp))
+                                Text("Izveido vai pievienojies grupai!", color = Color.DarkGray, fontSize = 12.sp)
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 80.dp)
+                        ) {
+                            items(groups, key = { it.id }) { group ->
+                                GroupRow(
+                                    group = group,
+                                    currentUserId = currentUser?.uid,
+                                    onClick = { onOpenGroup(group.id) }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                2 -> {
+                    val now = System.currentTimeMillis()
+                    val futureEvents = events.filter { it.dateTime >= now }.sortedBy { it.dateTime }
+                    val pastEvents = events.filter { it.dateTime < now }.sortedByDescending { it.dateTime }
+                    if (events.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize().padding(bottom = 80.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("Nav notikumu", color = Color.Gray, fontSize = 14.sp)
+                                Spacer(Modifier.height(8.dp))
+                                Text("Izveido pirmo notikumu!", color = Color.DarkGray, fontSize = 12.sp)
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 80.dp)
+                        ) {
+                            if (futureEvents.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        "Gaidāmie",
+                                        color = Color.Gray,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                                    )
+                                }
+                                items(futureEvents, key = { it.id }) { ev ->
+                                    EventRow(
+                                        event = ev,
+                                        currentUserId = currentUser?.uid,
+                                        onClick = { onOpenEvent(ev.id) }
+                                    )
+                                }
+                            }
+                            if (pastEvents.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        "Pagājušie",
+                                        color = Color.Gray,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                                    )
+                                }
+                                items(pastEvents, key = { "past_${it.id}" }) { ev ->
+                                    EventRow(
+                                        event = ev,
+                                        currentUserId = currentUser?.uid,
+                                        onClick = { onOpenEvent(ev.id) }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
+        // Tab-aware FAB
+        val fabIcon = when (selectedTab) {
+            1 -> Icons.Default.GroupAdd
+            2 -> Icons.Default.AddCircle
+            else -> Icons.Default.Edit
+        }
         FloatingActionButton(
-            onClick = { showNewChat = true },
+            onClick = {
+                when (selectedTab) {
+                    0 -> showNewChat = true
+                    1 -> onCreateGroup()
+                    2 -> onCreateEvent()
+                }
+            },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 24.dp, bottom = 96.dp),
             containerColor = RyderRed
         ) {
-            Icon(Icons.Default.Edit, contentDescription = "Jauna saruna", tint = Color.White)
+            Icon(fabIcon, contentDescription = null, tint = Color.White)
         }
     }
 
@@ -133,6 +274,131 @@ fun MessagesPage(
         )
     }
 }
+
+// ── Group row ─────────────────────────────────────────────────────────────────
+
+@Composable
+private fun GroupRow(
+    group: Group,
+    currentUserId: String?,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (group.pictureUrl != null) {
+            Image(
+                painter = rememberAsyncImagePainter(group.pictureUrl),
+                contentDescription = null,
+                modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.Gray),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = RyderRed) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        group.name.take(1).uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(group.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text(
+                "${group.memberIds.size} biedri",
+                color = Color.Gray,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        val role = when {
+            currentUserId == group.ownerId -> "Īpašnieks"
+            currentUserId != null && currentUserId in group.adminIds -> "Admin"
+            else -> null
+        }
+        role?.let {
+            Text(it, color = RyderRed, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+    HorizontalDivider(
+        color = Color(0xFF1E1E1E),
+        thickness = 0.5.dp,
+        modifier = Modifier.padding(start = 84.dp)
+    )
+}
+
+// ── Event row ─────────────────────────────────────────────────────────────────
+
+@Composable
+private fun EventRow(
+    event: Event,
+    currentUserId: String?,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            modifier = Modifier.size(48.dp),
+            shape = CircleShape,
+            color = Color(0xFF1A1A1A)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.Event,
+                    contentDescription = null,
+                    tint = RyderRed,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(event.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text(
+                "${formatEventDate(event.dateTime)} · ${event.place}",
+                color = Color.Gray,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        if (currentUserId != null && currentUserId in event.attendeeIds) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = RyderRed.copy(alpha = 0.15f)
+            ) {
+                Text(
+                    "Apmeklēju",
+                    color = RyderRed,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
+    }
+    HorizontalDivider(
+        color = Color(0xFF1E1E1E),
+        thickness = 0.5.dp,
+        modifier = Modifier.padding(start = 84.dp)
+    )
+}
+
+// ── Conversation row ──────────────────────────────────────────────────────────
 
 @Composable
 private fun ConversationRow(
@@ -171,9 +437,7 @@ private fun ConversationRow(
                 }
             }
         }
-
         Spacer(modifier = Modifier.width(16.dp))
-
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = nickname,
@@ -190,14 +454,8 @@ private fun ConversationRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
-
         Spacer(modifier = Modifier.width(8.dp))
-
-        Text(
-            text = formatConvTime(lastUpdated),
-            color = Color.Gray,
-            fontSize = 11.sp
-        )
+        Text(text = formatConvTime(lastUpdated), color = Color.Gray, fontSize = 11.sp)
     }
     HorizontalDivider(
         color = Color(0xFF1E1E1E),
@@ -205,6 +463,8 @@ private fun ConversationRow(
         modifier = Modifier.padding(start = 84.dp)
     )
 }
+
+// ── New chat dialog ───────────────────────────────────────────────────────────
 
 @Composable
 private fun NewChatDialog(
@@ -221,9 +481,7 @@ private fun NewChatDialog(
         val uid = currentUser?.uid ?: return@LaunchedEffect
         results = if (query.length >= 2) {
             try { repo.searchUsers(query, uid) } catch (_: Exception) { emptyList() }
-        } else {
-            emptyList()
-        }
+        } else emptyList()
     }
 
     Dialog(
@@ -326,6 +584,8 @@ private fun NewChatDialog(
     }
 }
 
+// ── Formatters ────────────────────────────────────────────────────────────────
+
 private fun formatConvTime(timeMillis: Long): String {
     if (timeMillis == 0L) return ""
     val diff = System.currentTimeMillis() - timeMillis
@@ -338,4 +598,9 @@ private fun formatConvTime(timeMillis: Long): String {
         hours < 24 -> "${hours}st"
         else -> "${days}d"
     }
+}
+
+private fun formatEventDate(millis: Long): String {
+    if (millis == 0L) return "?"
+    return SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(millis))
 }
