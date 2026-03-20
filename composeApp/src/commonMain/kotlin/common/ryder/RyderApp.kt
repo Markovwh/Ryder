@@ -44,10 +44,12 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
 
     Scaffold(
         bottomBar = {
-            if (currentScreen !in listOf(Screen.Registration, Screen.Login, Screen.EditProfile)
+            if (currentScreen !in listOf(Screen.Registration, Screen.Login, Screen.EditProfile, Screen.CreateGroup, Screen.CreateEvent)
                 && currentScreen !is Screen.Chat
                 && currentScreen !is Screen.UserProfile
-                && currentScreen !is Screen.HashtagFeed) {
+                && currentScreen !is Screen.HashtagFeed
+                && currentScreen !is Screen.GroupDetail
+                && currentScreen !is Screen.EventDetail) {
                 NavBar(
                     currentScreen = currentScreen,
                     onHome = { currentScreen = Screen.Home },
@@ -169,7 +171,55 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                 if (!isGuest && authService.getCurrentUserId() != null) {
                     MessagesPage(
                         currentUser = currentUser,
-                        onOpenChat = { chatScreen -> currentScreen = chatScreen }
+                        onOpenChat = { chatScreen -> currentScreen = chatScreen },
+                        onOpenGroup = { groupId -> currentScreen = Screen.GroupDetail(groupId) },
+                        onCreateGroup = { currentScreen = Screen.CreateGroup },
+                        onOpenEvent = { eventId -> currentScreen = Screen.EventDetail(eventId) },
+                        onCreateEvent = { currentScreen = Screen.CreateEvent }
+                    )
+                } else {
+                    currentScreen = Screen.Login
+                }
+            }
+
+            is Screen.GroupDetail -> {
+                val s = currentScreen as Screen.GroupDetail
+                GroupDetailPage(
+                    groupId = s.groupId,
+                    currentUser = currentUser,
+                    onBack = { currentScreen = Screen.Messages }
+                )
+            }
+
+            Screen.CreateGroup -> {
+                val user = currentUser
+                if (!isGuest && authService.getCurrentUserId() != null && user != null) {
+                    CreateGroupScreen(
+                        currentUser = user,
+                        onCreated = { groupId -> currentScreen = Screen.GroupDetail(groupId) },
+                        onCancel = { currentScreen = Screen.Messages }
+                    )
+                } else {
+                    currentScreen = Screen.Login
+                }
+            }
+
+            is Screen.EventDetail -> {
+                val s = currentScreen as Screen.EventDetail
+                EventDetailPage(
+                    eventId = s.eventId,
+                    currentUser = currentUser,
+                    onBack = { currentScreen = Screen.Messages }
+                )
+            }
+
+            Screen.CreateEvent -> {
+                val user = currentUser
+                if (!isGuest && authService.getCurrentUserId() != null && user != null) {
+                    CreateEventScreen(
+                        currentUser = user,
+                        onCreated = { eventId -> currentScreen = Screen.EventDetail(eventId) },
+                        onCancel = { currentScreen = Screen.Messages }
                     )
                 } else {
                     currentScreen = Screen.Login
