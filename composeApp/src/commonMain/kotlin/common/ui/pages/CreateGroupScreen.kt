@@ -31,7 +31,7 @@ import coil.compose.rememberAsyncImagePainter
 import common.data.GroupRepository
 import common.model.Group
 import common.model.User
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
 
 @Composable
@@ -52,10 +52,20 @@ fun CreateGroupScreen(
         uri?.let { pictureUri = it }
     }
 
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color(0xFF1A1A1A),
+        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedBorderColor = RyderAccent,
+        unfocusedBorderColor = Color(0xFF9E9E9E),
+        focusedLabelColor = RyderAccent,
+        unfocusedLabelColor = Color(0xFF757575),
+        cursorColor = RyderAccent
+    )
+
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = Color(0xFFEEEEEE),
         topBar = {
-            Surface(color = Color(0xFF111111)) {
+            Surface(color = Color(0xFFF5F5F5)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -64,11 +74,11 @@ fun CreateGroupScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.Default.Close, contentDescription = "Atcelt", tint = Color.White)
+                        Icon(Icons.Default.Close, contentDescription = "Atcelt", tint = Color(0xFF1A1A1A))
                     }
                     Text(
                         "Izveidot grupu",
-                        color = Color.White,
+                        color = Color(0xFF1A1A1A),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 17.sp,
                         modifier = Modifier.weight(1f)
@@ -102,7 +112,7 @@ fun CreateGroupScreen(
                     ) {
                         Text(
                             "Izveidot",
-                            color = if (!isLoading) RyderRed else Color.Gray,
+                            color = if (!isLoading) RyderAccent else Color(0xFF9E9E9E),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -122,8 +132,8 @@ fun CreateGroupScreen(
                 modifier = Modifier
                     .size(96.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF1A1A1A))
-                    .border(2.dp, RyderRed, CircleShape)
+                    .background(Color(0xFFD0D0D0))
+                    .border(2.dp, RyderAccent, CircleShape)
                     .clickable { imagePicker.launch("image/*") },
                 contentAlignment = Alignment.Center
             ) {
@@ -139,10 +149,10 @@ fun CreateGroupScreen(
                         Icon(
                             Icons.Default.CameraAlt,
                             contentDescription = null,
-                            tint = Color.Gray,
+                            tint = Color(0xFF757575),
                             modifier = Modifier.size(28.dp)
                         )
-                        Text("Foto", color = Color.Gray, fontSize = 12.sp)
+                        Text("Foto", color = Color(0xFF757575), fontSize = 12.sp)
                     }
                 }
             }
@@ -152,17 +162,10 @@ fun CreateGroupScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it; error = null },
-                label = { Text("Grupas nosaukums *", color = Color.Gray) },
+                label = { Text("Grupas nosaukums *") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = RyderRed,
-                    unfocusedBorderColor = Color.Gray,
-                    focusedLabelColor = RyderRed,
-                    cursorColor = RyderRed
-                ),
+                colors = fieldColors,
                 singleLine = true
             )
 
@@ -171,30 +174,23 @@ fun CreateGroupScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Apraksts", color = Color.Gray) },
+                label = { Text("Apraksts") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = RyderRed,
-                    unfocusedBorderColor = Color.Gray,
-                    focusedLabelColor = RyderRed,
-                    cursorColor = RyderRed
-                ),
+                colors = fieldColors,
                 maxLines = 5
             )
 
             error?.let {
                 Spacer(Modifier.height(12.dp))
-                Text(it, color = Color.Red, fontSize = 13.sp)
+                Text(it, color = Color(0xFFE53935), fontSize = 13.sp)
             }
 
             if (isLoading) {
                 Spacer(Modifier.height(24.dp))
-                CircularProgressIndicator(color = RyderRed)
+                CircularProgressIndicator(color = RyderAccent)
             }
         }
     }

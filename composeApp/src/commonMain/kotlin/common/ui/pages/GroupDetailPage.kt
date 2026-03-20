@@ -33,7 +33,7 @@ import common.data.GroupRepository
 import common.model.Group
 import common.model.Post
 import common.model.User
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -74,9 +74,9 @@ fun GroupDetailPage(
     val regularPosts = posts.filter { it.id !in pinnedIds }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = Color(0xFFEEEEEE),
         topBar = {
-            Surface(color = Color(0xFF111111)) {
+            Surface(color = Color(0xFFF5F5F5)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -85,11 +85,11 @@ fun GroupDetailPage(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color(0xFF1A1A1A))
                     }
                     Text(
                         text = g?.name ?: "Grupa",
-                        color = Color.White,
+                        color = Color(0xFF1A1A1A),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 17.sp,
                         modifier = Modifier.weight(1f)
@@ -97,7 +97,7 @@ fun GroupDetailPage(
                     if (currentUser != null && g != null) {
                         Box {
                             IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color.Gray)
+                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color(0xFF757575))
                             }
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                 if (isAdmin) {
@@ -116,12 +116,12 @@ fun GroupDetailPage(
                                         onClick = { showMenu = false; showEditDialog = true }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Dzēst grupu", color = Color(0xFFFF4444)) },
+                                        text = { Text("Dzēst grupu", color = Color(0xFFE53935)) },
                                         onClick = { showMenu = false; showDeleteGroupConfirm = true }
                                     )
                                 } else if (isMember) {
                                     DropdownMenuItem(
-                                        text = { Text("Atstāt grupu", color = Color(0xFFFF4444)) },
+                                        text = { Text("Atstāt grupu", color = Color(0xFFE53935)) },
                                         onClick = {
                                             showMenu = false
                                             scope.launch {
@@ -143,7 +143,7 @@ fun GroupDetailPage(
             if (isMember) {
                 FloatingActionButton(
                     onClick = { showPostDialog = true },
-                    containerColor = RyderRed,
+                    containerColor = RyderAccent,
                     modifier = Modifier.padding(bottom = 8.dp)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Jauns ieraksts", tint = Color.White)
@@ -153,13 +153,13 @@ fun GroupDetailPage(
     ) { padding ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = RyderRed)
+                CircularProgressIndicator(color = RyderAccent)
             }
             return@Scaffold
         }
         if (g == null) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Grupa nav atrasta", color = Color.Gray)
+                Text("Grupa nav atrasta", color = Color(0xFF757575))
             }
             return@Scaffold
         }
@@ -182,7 +182,7 @@ fun GroupDetailPage(
                         }
                     }
                 )
-                HorizontalDivider(color = Color(0xFF2D2D2D))
+                HorizontalDivider(color = Color(0xFFD9D9D9))
             }
 
             if (pinnedPosts.isNotEmpty()) {
@@ -194,13 +194,13 @@ fun GroupDetailPage(
                         Icon(
                             Icons.Default.PushPin,
                             contentDescription = null,
-                            tint = RyderRed,
+                            tint = RyderAccent,
                             modifier = Modifier.size(15.dp)
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
                             "Piespraustas ziņas",
-                            color = Color.White,
+                            color = Color(0xFF1A1A1A),
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
                         )
@@ -231,7 +231,7 @@ fun GroupDetailPage(
                         }
                     )
                 }
-                item { HorizontalDivider(color = Color(0xFF2D2D2D)) }
+                item { HorizontalDivider(color = Color(0xFFD9D9D9)) }
             }
 
             if (regularPosts.isEmpty() && pinnedPosts.isEmpty()) {
@@ -243,7 +243,7 @@ fun GroupDetailPage(
                         Text(
                             if (isMember) "Nav ierakstu. Esi pirmais, kas publicē!"
                             else "Pievienojies grupai, lai redzētu ierakstus.",
-                            color = Color.Gray,
+                            color = Color(0xFF757575),
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center
                         )
@@ -323,9 +323,9 @@ fun GroupDetailPage(
     if (showDeleteGroupConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteGroupConfirm = false },
-            containerColor = Color(0xFF1A1A1A),
-            title = { Text("Dzēst grupu?", color = Color.White) },
-            text = { Text("Šo darbību nevar atsaukt. Visi ieraksti tiks dzēsti.", color = Color.Gray) },
+            containerColor = Color(0xFFF5F5F5),
+            title = { Text("Dzēst grupu?", color = Color(0xFF1A1A1A)) },
+            text = { Text("Šo darbību nevar atsaukt. Visi ieraksti tiks dzēsti.", color = Color(0xFF757575)) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteGroupConfirm = false
@@ -333,11 +333,11 @@ fun GroupDetailPage(
                         try { repo.deleteGroup(groupId) } catch (_: Exception) {}
                         onBack()
                     }
-                }) { Text("Dzēst", color = Color(0xFFFF4444)) }
+                }) { Text("Dzēst", color = Color(0xFFE53935)) }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteGroupConfirm = false }) {
-                    Text("Atcelt", color = Color.Gray)
+                    Text("Atcelt", color = Color(0xFF757575))
                 }
             }
         )
@@ -354,22 +354,22 @@ private fun GroupHeader(
     onJoin: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp),
+        modifier = Modifier.fillMaxWidth().background(Color(0xFFF5F5F5)).padding(horizontal = 20.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (group.pictureUrl != null) {
             Image(
                 painter = rememberAsyncImagePainter(group.pictureUrl),
                 contentDescription = null,
-                modifier = Modifier.size(80.dp).clip(CircleShape).background(Color.Gray),
+                modifier = Modifier.size(80.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
                 contentScale = ContentScale.Crop
             )
         } else {
-            Surface(modifier = Modifier.size(80.dp), shape = CircleShape, color = RyderRed) {
+            Surface(modifier = Modifier.size(80.dp), shape = CircleShape, color = RyderAccent) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         group.name.take(1).uppercase(),
-                        color = Color.White,
+                        color = Color(0xFF1A1A1A),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -377,23 +377,23 @@ private fun GroupHeader(
             }
         }
         Spacer(Modifier.height(12.dp))
-        Text(group.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        Text(group.name, color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 20.sp)
         if (group.description.isNotEmpty()) {
             Spacer(Modifier.height(6.dp))
             Text(
                 group.description,
-                color = Color.Gray,
+                color = Color(0xFF757575),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
             )
         }
         Spacer(Modifier.height(8.dp))
-        Text("${group.memberIds.size} biedri", color = Color.Gray, fontSize = 13.sp)
+        Text("${group.memberIds.size} biedri", color = Color(0xFF757575), fontSize = 13.sp)
         if (!isMember && currentUser != null) {
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = onJoin,
-                colors = ButtonDefaults.buttonColors(containerColor = RyderRed),
+                colors = ButtonDefaults.buttonColors(containerColor = RyderAccent, contentColor = Color.White),
                 shape = RoundedCornerShape(8.dp)
             ) { Text("Pievienoties") }
         }
@@ -415,7 +415,7 @@ private fun GroupPostCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (isPinned) Color(0xFF0D1A10) else Color.Black)
+            .background(if (isPinned) Color(0xFFECFCD3) else Color(0xFFF5F5F5))
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -423,15 +423,15 @@ private fun GroupPostCard(
                 Image(
                     painter = rememberAsyncImagePainter(post.user.profilePicture),
                     contentDescription = null,
-                    modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.Gray),
+                    modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
                     contentScale = ContentScale.Crop
                 )
             } else {
-                Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = RyderRed) {
+                Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = RyderAccent) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             post.user.nickname.take(1).uppercase(),
-                            color = Color.White,
+                            color = Color(0xFF1A1A1A),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -442,17 +442,17 @@ private fun GroupPostCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     post.user.nickname,
-                    color = Color.White,
+                    color = Color(0xFF1A1A1A),
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp
                 )
-                Text(formatGroupPostTime(post.createdAt), color = Color.Gray, fontSize = 11.sp)
+                Text(formatGroupPostTime(post.createdAt), color = Color(0xFF757575), fontSize = 11.sp)
             }
             if (isPinned) {
                 Icon(
                     Icons.Default.PushPin,
                     contentDescription = null,
-                    tint = RyderRed,
+                    tint = RyderAccent,
                     modifier = Modifier.size(14.dp)
                 )
                 Spacer(Modifier.width(4.dp))
@@ -463,7 +463,7 @@ private fun GroupPostCard(
                         Icon(
                             Icons.Default.MoreVert,
                             contentDescription = null,
-                            tint = Color.Gray,
+                            tint = Color(0xFF757575),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -480,7 +480,7 @@ private fun GroupPostCard(
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("Noņemt", color = Color(0xFFFF4444)) },
+                            text = { Text("Noņemt", color = Color(0xFFE53935)) },
                             onClick = { showMenu = false; onRemove() }
                         )
                     }
@@ -489,7 +489,7 @@ private fun GroupPostCard(
         }
         if (post.description.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
-            Text(post.description, color = Color.White, fontSize = 14.sp)
+            Text(post.description, color = Color(0xFF1A1A1A), fontSize = 14.sp)
         }
         if (post.mediaUrls.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
@@ -500,12 +500,12 @@ private fun GroupPostCard(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color.DarkGray),
+                    .background(Color(0xFFD0D0D0)),
                 contentScale = ContentScale.Crop
             )
         }
     }
-    HorizontalDivider(color = Color(0xFF2D2D2D))
+    HorizontalDivider(color = Color(0xFFD9D9D9))
 }
 
 // ── Create group post dialog ──────────────────────────────────────────────────
@@ -532,23 +532,23 @@ private fun CreateGroupPostDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF1A1A1A))
+                .background(Color(0xFFF5F5F5))
                 .padding(16.dp)
         ) {
-            Text("Jauns ieraksts", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("Jauns ieraksts", color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                placeholder = { Text("Ko vēlies dalīties?", color = Color.Gray) },
+                placeholder = { Text("Ko vēlies dalīties?", color = Color(0xFF9E9E9E)) },
                 modifier = Modifier.fillMaxWidth().height(120.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = RyderRed,
-                    unfocusedBorderColor = Color.Gray,
-                    cursorColor = RyderRed
+                    focusedTextColor = Color(0xFF1A1A1A),
+                    unfocusedTextColor = Color(0xFF1A1A1A),
+                    focusedBorderColor = RyderAccent,
+                    unfocusedBorderColor = Color(0xFF9E9E9E),
+                    cursorColor = RyderAccent
                 ),
                 maxLines = 6
             )
@@ -568,17 +568,17 @@ private fun CreateGroupPostDialog(
                         onClick = { mediaUri = null },
                         modifier = Modifier.align(Alignment.TopEnd)
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Default.Close, contentDescription = null, tint = Color(0xFF1A1A1A))
                     }
                 }
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { imagePicker.launch("image/*") }) {
-                    Icon(Icons.Default.Image, contentDescription = "Pievienot attēlu", tint = Color.Gray)
+                    Icon(Icons.Default.Image, contentDescription = "Pievienot attēlu", tint = Color(0xFF757575))
                 }
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = onDismiss) { Text("Atcelt", color = Color.Gray) }
+                TextButton(onClick = onDismiss) { Text("Atcelt", color = Color(0xFF757575)) }
                 Spacer(Modifier.width(8.dp))
                 Button(
                     onClick = {
@@ -601,7 +601,7 @@ private fun CreateGroupPostDialog(
                         }
                     },
                     enabled = !isPosting && (text.isNotBlank() || mediaUri != null),
-                    colors = ButtonDefaults.buttonColors(containerColor = RyderRed),
+                    colors = ButtonDefaults.buttonColors(containerColor = RyderAccent, contentColor = Color.White),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     if (isPosting) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp))
@@ -638,23 +638,23 @@ private fun InviteUserDialog(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF1A1A1A))
+                .background(Color(0xFFF5F5F5))
                 .padding(16.dp)
         ) {
-            Text("Uzaicināt lietotāju", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("Uzaicināt lietotāju", color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it; successMsg = null },
-                placeholder = { Text("Meklēt lietotāju...", color = Color.Gray) },
+                placeholder = { Text("Meklēt lietotāju...", color = Color(0xFF9E9E9E)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = RyderRed,
-                    unfocusedBorderColor = Color.Gray,
-                    cursorColor = RyderRed
+                    focusedTextColor = Color(0xFF1A1A1A),
+                    unfocusedTextColor = Color(0xFF1A1A1A),
+                    focusedBorderColor = RyderAccent,
+                    unfocusedBorderColor = Color(0xFF9E9E9E),
+                    cursorColor = RyderAccent
                 ),
                 singleLine = true
             )
@@ -686,28 +686,28 @@ private fun InviteUserDialog(
                         Image(
                             painter = rememberAsyncImagePainter(pic),
                             contentDescription = null,
-                            modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.Gray),
+                            modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = RyderRed) {
+                        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = RyderAccent) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     user.nickname.take(1).uppercase(),
-                                    color = Color.White,
+                                    color = Color(0xFF1A1A1A),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                     }
                     Spacer(Modifier.width(12.dp))
-                    Text(user.nickname, color = Color.White, fontSize = 15.sp)
+                    Text(user.nickname, color = Color(0xFF1A1A1A), fontSize = 15.sp)
                 }
-                HorizontalDivider(color = Color(0xFF2D2D2D))
+                HorizontalDivider(color = Color(0xFFD9D9D9))
             }
             Spacer(Modifier.height(8.dp))
             TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                Text("Aizvērt", color = Color.Gray)
+                Text("Aizvērt", color = Color(0xFF757575))
             }
         }
     }
@@ -738,7 +738,7 @@ private fun ManageMembersDialog(
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.75f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF1A1A1A))
+                .background(Color(0xFFF5F5F5))
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
@@ -746,14 +746,14 @@ private fun ManageMembersDialog(
             ) {
                 Text(
                     "Biedri (${members.size})",
-                    color = Color.White,
+                    color = Color(0xFF1A1A1A),
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = onDismiss) { Text("Aizvērt", color = Color.Gray) }
+                TextButton(onClick = onDismiss) { Text("Aizvērt", color = Color(0xFF757575)) }
             }
-            HorizontalDivider(color = Color(0xFF2D2D2D))
+            HorizontalDivider(color = Color(0xFFD9D9D9))
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(members, key = { it.uid }) { member ->
                     val isThisOwner = member.uid == group.ownerId
@@ -770,15 +770,15 @@ private fun ManageMembersDialog(
                             Image(
                                 painter = rememberAsyncImagePainter(pic),
                                 contentDescription = null,
-                                modifier = Modifier.size(44.dp).clip(CircleShape).background(Color.Gray),
+                                modifier = Modifier.size(44.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
                                 contentScale = ContentScale.Crop
                             )
                         } else {
-                            Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = RyderRed) {
+                            Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = RyderAccent) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(
                                         member.nickname.take(1).uppercase(),
-                                        color = Color.White,
+                                        color = Color(0xFF1A1A1A),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 18.sp
                                     )
@@ -789,7 +789,7 @@ private fun ManageMembersDialog(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 member.nickname,
-                                color = Color.White,
+                                color = Color(0xFF1A1A1A),
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp
                             )
@@ -799,14 +799,14 @@ private fun ManageMembersDialog(
                                     isMemberAdmin -> "Administrators"
                                     else -> "Biedrs"
                                 },
-                                color = if (isThisOwner) RyderRed else Color.Gray,
+                                color = if (isThisOwner) RyderAccent else Color(0xFF757575),
                                 fontSize = 12.sp
                             )
                         }
                         if (isOwner && !isThisOwner && member.uid != currentUserId) {
                             Box {
                                 IconButton(onClick = { showMemberMenu = true }) {
-                                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = Color.Gray)
+                                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = Color(0xFF757575))
                                 }
                                 DropdownMenu(
                                     expanded = showMemberMenu,
@@ -842,7 +842,7 @@ private fun ManageMembersDialog(
                                         )
                                     }
                                     DropdownMenuItem(
-                                        text = { Text("Izmest no grupas", color = Color(0xFFFF4444)) },
+                                        text = { Text("Izmest no grupas", color = Color(0xFFE53935)) },
                                         onClick = {
                                             showMemberMenu = false
                                             scope.launch {
@@ -855,7 +855,7 @@ private fun ManageMembersDialog(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Aizliegt piekļuvi", color = Color(0xFFFF4444)) },
+                                        text = { Text("Aizliegt piekļuvi", color = Color(0xFFE53935)) },
                                         onClick = {
                                             showMemberMenu = false
                                             scope.launch {
@@ -871,7 +871,7 @@ private fun ManageMembersDialog(
                             }
                         }
                     }
-                    HorizontalDivider(color = Color(0xFF2D2D2D))
+                    HorizontalDivider(color = Color(0xFFD9D9D9))
                 }
             }
         }
@@ -892,41 +892,37 @@ private fun EditGroupDialog(
     var isSaving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color(0xFF1A1A1A),
+        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedBorderColor = RyderAccent,
+        unfocusedBorderColor = Color(0xFF9E9E9E),
+        focusedLabelColor = RyderAccent,
+        unfocusedLabelColor = Color(0xFF757575),
+        cursorColor = RyderAccent
+    )
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1A1A1A),
-        title = { Text("Rediģēt grupu", color = Color.White) },
+        containerColor = Color(0xFFF5F5F5),
+        title = { Text("Rediģēt grupu", color = Color(0xFF1A1A1A)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nosaukums", color = Color.Gray) },
+                    label = { Text("Nosaukums") },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = RyderRed,
-                        unfocusedBorderColor = Color.Gray,
-                        focusedLabelColor = RyderRed,
-                        cursorColor = RyderRed
-                    ),
+                    colors = fieldColors,
                     singleLine = true
                 )
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Apraksts", color = Color.Gray) },
+                    label = { Text("Apraksts") },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = RyderRed,
-                        unfocusedBorderColor = Color.Gray,
-                        focusedLabelColor = RyderRed,
-                        cursorColor = RyderRed
-                    ),
+                    colors = fieldColors,
                     maxLines = 4
                 )
             }
@@ -945,10 +941,10 @@ private fun EditGroupDialog(
                     }
                 },
                 enabled = !isSaving && name.isNotBlank()
-            ) { Text("Saglabāt", color = RyderRed) }
+            ) { Text("Saglabāt", color = RyderAccent) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Atcelt", color = Color.Gray) }
+            TextButton(onClick = onDismiss) { Text("Atcelt", color = Color(0xFF757575)) }
         }
     )
 }

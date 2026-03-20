@@ -2,6 +2,7 @@ package common.data
 
 import android.net.Uri
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 import common.model.Conversation
 import common.model.Message
@@ -19,24 +20,24 @@ class MessageRepository {
 
     suspend fun getOrCreateConversation(currentUser: User, otherUser: User): String {
         val id = conversationId(currentUser.uid, otherUser.uid)
-        val doc = conversationsRef.document(id)
-        if (!doc.get().await().exists()) {
-            doc.set(
-                Conversation(
-                    id = id,
-                    participants = listOf(currentUser.uid, otherUser.uid),
-                    participantNicknames = mapOf(
-                        currentUser.uid to currentUser.nickname,
-                        otherUser.uid to otherUser.nickname
-                    ),
-                    participantPictures = mapOf(
-                        currentUser.uid to (currentUser.profilePicture ?: ""),
-                        otherUser.uid to (otherUser.profilePicture ?: "")
-                    ),
-                    lastUpdated = System.currentTimeMillis()
+        // Always merge participant data — if sendMessage already created the document without
+        // a participants array, this ensures the array gets written so the conversation
+        // shows up in the whereArrayContains("participants") query.
+        conversationsRef.document(id).set(
+            mapOf(
+                "id" to id,
+                "participants" to listOf(currentUser.uid, otherUser.uid),
+                "participantNicknames" to mapOf(
+                    currentUser.uid to currentUser.nickname,
+                    otherUser.uid to otherUser.nickname
+                ),
+                "participantPictures" to mapOf(
+                    currentUser.uid to (currentUser.profilePicture ?: ""),
+                    otherUser.uid to (otherUser.profilePicture ?: "")
                 )
-            ).await()
-        }
+            ),
+            SetOptions.merge()
+        ).await()
         return id
     }
 
@@ -50,12 +51,14 @@ class MessageRepository {
             message.mediaUrls.isNotEmpty() -> "📷 Foto/video"
             else -> message.text.take(60)
         }
-        conversationsRef.document(conversationId).update(
+        // Use set+merge so this works even if the conversation document doesn't exist yet
+        conversationsRef.document(conversationId).set(
             mapOf(
                 "lastMessage" to preview,
                 "lastMessageSenderId" to message.senderId,
                 "lastUpdated" to System.currentTimeMillis()
-            )
+            ),
+            SetOptions.merge()
         ).await()
     }
 
@@ -93,6 +96,20 @@ class MessageRepository {
                  it.firstName.contains(query, ignoreCase = true))
             }
             .take(20)
+    }
+
+    suspend fun deleteMessage(conversationId: String, messageId: String) {
+        conversationsRef.document(conversationId)
+            .collection("messages")
+            .document(messageId)
+            .delete()
+            .await()
+    }
+
+    suspend fun deleteConversation(conversationId: String) {
+        val messages = conversationsRef.document(conversationId).collection("messages").get().await()
+        messages.documents.forEach { it.reference.delete().await() }
+        conversationsRef.document(conversationId).delete().await()
     }
 
     suspend fun uploadMessageMedia(uri: Uri, senderId: String): String {

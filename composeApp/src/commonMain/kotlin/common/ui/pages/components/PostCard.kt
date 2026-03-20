@@ -37,11 +37,11 @@ import common.model.User
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
-private val CardBackground = Color(0xFF1A1A1A)
-private val DividerColor = Color(0xFF2D2D2D)
+private val CardBackground = Color(0xFFF5F5F5)
+private val DividerColor = Color(0xFFD9D9D9)
 
 @Composable
-fun PostCard(post: Post, currentUser: User?) {
+fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
     var isLiked by remember { mutableStateOf(false) }
     var likeCount by remember { mutableStateOf(post.likeCount) }
     var showComments by remember { mutableStateOf(false) }
@@ -49,12 +49,15 @@ fun PostCard(post: Post, currentUser: User?) {
     var showMenu by remember { mutableStateOf(false) }
     var showShareOptions by remember { mutableStateOf(false) }
     var showShareToUser by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editText by remember { mutableStateOf(post.description) }
 
+    val isOwner = currentUser?.uid == post.userId
     val repository = remember { PostRepository() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // Load whether current user has liked this post
     LaunchedEffect(post.id, currentUser?.uid) {
         val uid = currentUser?.uid ?: return@LaunchedEffect
         if (post.id.isNotEmpty()) {
@@ -68,10 +71,9 @@ fun PostCard(post: Post, currentUser: User?) {
             .padding(horizontal = 12.dp, vertical = 6.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(CardBackground)
-            .border(1.5.dp, RyderRed, RoundedCornerShape(14.dp))
+            .border(1.5.dp, RyderAccent, RoundedCornerShape(14.dp))
     ) {
         Column {
-            // ── Header ───────────────────────────────────────────────────────
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -86,44 +88,46 @@ fun PostCard(post: Post, currentUser: User?) {
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(Color.Gray),
+                        .background(Color(0xFFD0D0D0)),
                     contentScale = ContentScale.Crop
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = post.user.nickname,
-                        color = Color.White,
+                        color = Color(0xFF1A1A1A),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp
                     )
                     val time = PostCardTimeFormatter.formatTimeAgo(post.createdAt)
                     if (time.isNotEmpty()) {
-                        Text(text = time, color = Color.Gray, fontSize = 11.sp)
+                        Text(text = time, color = Color(0xFF757575), fontSize = 11.sp)
                     }
                 }
-                // Three-dot menu
                 Box {
                     IconButton(onClick = { showMenu = true }) {
-                        Icon(
-                            Icons.Default.MoreVert,
-                            contentDescription = "Vairāk",
-                            tint = Color.Gray
-                        )
+                        Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color(0xFF757575))
                     }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Ziņot") },
-                            onClick = { showMenu = false; showReportDialog = true }
-                        )
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        if (isOwner) {
+                            DropdownMenuItem(
+                                text = { Text("Rediģēt") },
+                                onClick = { showMenu = false; editText = post.description; showEditDialog = true }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Dzēst", color = Color(0xFFE53935)) },
+                                onClick = { showMenu = false; showDeleteConfirm = true }
+                            )
+                        } else {
+                            DropdownMenuItem(
+                                text = { Text("Ziņot") },
+                                onClick = { showMenu = false; showReportDialog = true }
+                            )
+                        }
                     }
                 }
             }
 
-            // ── Media ─────────────────────────────────────────────────────────
             if (post.mediaUrls.isNotEmpty()) {
                 val pagerState = rememberPagerState(pageCount = { post.mediaUrls.size })
                 Box {
@@ -134,7 +138,7 @@ fun PostCard(post: Post, currentUser: User?) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(300.dp)
-                                .background(Color.DarkGray),
+                                .background(Color(0xFFD0D0D0)),
                             contentScale = ContentScale.Crop
                         )
                     }
@@ -151,8 +155,8 @@ fun PostCard(post: Post, currentUser: User?) {
                                         .size(6.dp)
                                         .clip(CircleShape)
                                         .background(
-                                            if (pagerState.currentPage == index) Color.White
-                                            else Color.White.copy(alpha = 0.4f)
+                                            if (pagerState.currentPage == index) Color(0xFF1A1A1A)
+                                            else Color(0xFF1A1A1A).copy(alpha = 0.3f)
                                         )
                                 )
                             }
@@ -161,11 +165,10 @@ fun PostCard(post: Post, currentUser: User?) {
                 }
             }
 
-            // ── Description ───────────────────────────────────────────────────
             if (post.description.isNotEmpty()) {
                 Text(
                     text = post.description,
-                    color = Color.White,
+                    color = Color(0xFF1A1A1A),
                     fontSize = 14.sp,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                 )
@@ -173,17 +176,15 @@ fun PostCard(post: Post, currentUser: User?) {
 
             HorizontalDivider(color = DividerColor, modifier = Modifier.padding(horizontal = 8.dp))
 
-            // ── Action row ────────────────────────────────────────────────────
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp, vertical = 2.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // Like
                 PostActionButton(
                     icon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    tint = if (isLiked) RyderRed else Color.Gray,
+                    tint = if (isLiked) RyderAccent else Color(0xFF757575),
                     label = if (likeCount > 0) likeCount.toString() else ""
                 ) {
                     val uid = currentUser?.uid ?: return@PostActionButton
@@ -200,17 +201,15 @@ fun PostCard(post: Post, currentUser: User?) {
                     }
                 }
 
-                // Comment
                 PostActionButton(
                     icon = Icons.Default.ChatBubble,
-                    tint = Color.Gray,
+                    tint = Color(0xFF757575),
                     label = if (post.commentCount > 0) post.commentCount.toString() else ""
                 ) { showComments = true }
 
-                // Share
                 PostActionButton(
                     icon = Icons.Default.Share,
-                    tint = Color.Gray,
+                    tint = Color(0xFF757575),
                     label = ""
                 ) {
                     if (currentUser != null) {
@@ -235,7 +234,6 @@ fun PostCard(post: Post, currentUser: User?) {
         }
     }
 
-    // ── Comments bottom sheet ─────────────────────────────────────────────────
     if (showComments) {
         CommentsSheet(
             post = post,
@@ -245,7 +243,6 @@ fun PostCard(post: Post, currentUser: User?) {
         )
     }
 
-    // ── Report dialog ─────────────────────────────────────────────────────────
     if (showReportDialog) {
         ReportDialog(
             onDismiss = { showReportDialog = false },
@@ -259,7 +256,6 @@ fun PostCard(post: Post, currentUser: User?) {
         )
     }
 
-    // ── Share options dialog ───────────────────────────────────────────────────
     if (showShareOptions) {
         val shareText = buildString {
             if (post.description.isNotEmpty()) append(post.description).append("\n")
@@ -268,7 +264,7 @@ fun PostCard(post: Post, currentUser: User?) {
         AlertDialog(
             onDismissRequest = { showShareOptions = false },
             containerColor = CardBackground,
-            title = { Text("Dalīties", color = Color.White) },
+            title = { Text("Dalīties", color = Color(0xFF1A1A1A)) },
             text = {
                 Column {
                     TextButton(
@@ -285,31 +281,80 @@ fun PostCard(post: Post, currentUser: User?) {
                             )
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Dalīties ārēji", color = Color.White, modifier = Modifier.fillMaxWidth()) }
+                    ) { Text("Dalīties ārēji", color = Color(0xFF1A1A1A), modifier = Modifier.fillMaxWidth()) }
                     HorizontalDivider(color = DividerColor)
                     TextButton(
                         onClick = { showShareOptions = false; showShareToUser = true },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Sūtīt draugam", color = Color.White, modifier = Modifier.fillMaxWidth()) }
+                    ) { Text("Sūtīt draugam", color = Color(0xFF1A1A1A), modifier = Modifier.fillMaxWidth()) }
                 }
             },
             confirmButton = {},
             dismissButton = {
-                TextButton(onClick = { showShareOptions = false }) { Text("Atcelt", color = Color.Gray) }
+                TextButton(onClick = { showShareOptions = false }) { Text("Atcelt", color = Color(0xFF757575)) }
             }
         )
     }
 
     if (showShareToUser && currentUser != null) {
-        ShareToUserDialog(
-            post = post,
-            currentUser = currentUser,
-            onDismiss = { showShareToUser = false }
+        ShareToUserDialog(post = post, currentUser = currentUser, onDismiss = { showShareToUser = false })
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            containerColor = CardBackground,
+            title = { Text("Dzēst ierakstu?", color = Color(0xFF1A1A1A)) },
+            text = { Text("Šo darbību nevar atsaukt.", color = Color(0xFF757575)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    scope.launch {
+                        try { repository.deletePost(post.id); onDeleted?.invoke() } catch (_: Exception) {}
+                    }
+                }) { Text("Dzēst", color = Color(0xFFE53935)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Atcelt", color = Color(0xFF757575)) }
+            }
+        )
+    }
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            containerColor = CardBackground,
+            title = { Text("Rediģēt ierakstu", color = Color(0xFF1A1A1A)) },
+            text = {
+                OutlinedTextField(
+                    value = editText,
+                    onValueChange = { editText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color(0xFF1A1A1A),
+                        unfocusedTextColor = Color(0xFF1A1A1A),
+                        focusedBorderColor = RyderAccent,
+                        unfocusedBorderColor = Color(0xFF9E9E9E),
+                        cursorColor = RyderAccent
+                    ),
+                    minLines = 3
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val newText = editText
+                    showEditDialog = false
+                    scope.launch {
+                        try { repository.updatePost(post.id, newText) } catch (_: Exception) {}
+                    }
+                }) { Text("Saglabāt", color = RyderAccent) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) { Text("Atcelt", color = Color(0xFF757575)) }
+            }
         )
     }
 }
-
-// ── Helper composables ────────────────────────────────────────────────────────
 
 @Composable
 private fun PostActionButton(
@@ -327,7 +372,7 @@ private fun PostActionButton(
         Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
         if (label.isNotEmpty()) {
             Spacer(modifier = Modifier.width(4.dp))
-            Text(text = label, color = Color.Gray, fontSize = 13.sp)
+            Text(text = label, color = Color(0xFF757575), fontSize = 13.sp)
         }
     }
 }
@@ -353,14 +398,14 @@ private fun CommentsSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = CardBackground,
+        containerColor = Color(0xFFF5F5F5),
         dragHandle = {
             Box(
                 modifier = Modifier
                     .padding(vertical = 8.dp)
                     .size(width = 40.dp, height = 4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color.Gray)
+                    .background(Color(0xFFCCCCCC))
             )
         }
     ) {
@@ -373,7 +418,7 @@ private fun CommentsSheet(
         ) {
             Text(
                 text = "Komentāri",
-                color = Color.White,
+                color = Color(0xFF1A1A1A),
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = 12.dp)
@@ -381,14 +426,12 @@ private fun CommentsSheet(
 
             when {
                 isLoading -> CircularProgressIndicator(
-                    color = RyderRed,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(24.dp)
+                    color = RyderAccent,
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(24.dp)
                 )
                 comments.isEmpty() -> Text(
                     text = "Nav komentāru. Esi pirmais!",
-                    color = Color.Gray,
+                    color = Color(0xFF757575),
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
                 else -> LazyColumn(
@@ -400,15 +443,12 @@ private fun CommentsSheet(
                         Column(modifier = Modifier.padding(vertical = 6.dp)) {
                             Text(
                                 text = comment.nickname,
-                                color = RyderRed,
+                                color = RyderAccent,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 13.sp
                             )
-                            Text(text = comment.text, color = Color.White, fontSize = 14.sp)
-                            HorizontalDivider(
-                                color = DividerColor,
-                                modifier = Modifier.padding(top = 6.dp)
-                            )
+                            Text(text = comment.text, color = Color(0xFF1A1A1A), fontSize = 14.sp)
+                            HorizontalDivider(color = DividerColor, modifier = Modifier.padding(top = 6.dp))
                         }
                     }
                 }
@@ -425,14 +465,14 @@ private fun CommentsSheet(
                         shape = RoundedCornerShape(24.dp),
                         value = commentText,
                         onValueChange = { commentText = it },
-                        placeholder = { Text("Raksti komentāru...", color = Color.Gray) },
+                        placeholder = { Text("Raksti komentāru...", color = Color(0xFF9E9E9E)) },
                         modifier = Modifier.weight(1f),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = RyderRed,
-                            unfocusedBorderColor = Color.Gray,
-                            cursorColor = RyderRed
+                            focusedTextColor = Color(0xFF1A1A1A),
+                            unfocusedTextColor = Color(0xFF1A1A1A),
+                            focusedBorderColor = RyderAccent,
+                            unfocusedBorderColor = Color(0xFF9E9E9E),
+                            cursorColor = RyderAccent
                         ),
                         singleLine = true
                     )
@@ -458,13 +498,13 @@ private fun CommentsSheet(
                             }
                         }
                     ) {
-                        Icon(Icons.Default.Send, contentDescription = "Sūtīt", tint = RyderRed)
+                        Icon(Icons.Default.Send, contentDescription = "Sūtīt", tint = RyderAccent)
                     }
                 }
             } else {
                 Text(
                     text = "Piesakies, lai komentētu",
-                    color = Color.Gray,
+                    color = Color(0xFF757575),
                     fontSize = 13.sp,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
@@ -476,27 +516,17 @@ private fun CommentsSheet(
 }
 
 @Composable
-private fun ReportDialog(
-    onDismiss: () -> Unit,
-    onReport: (String) -> Unit
-) {
+private fun ReportDialog(onDismiss: () -> Unit, onReport: (String) -> Unit) {
     val reasons = listOf("Surogātpasts", "Nepiedienīgs saturs", "Uzmākšanās", "Viltus informācija", "Cits")
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = CardBackground,
-        title = { Text("Ziņot par ziņu", color = Color.White) },
+        title = { Text("Ziņot par ziņu", color = Color(0xFF1A1A1A)) },
         text = {
             Column {
                 reasons.forEach { reason ->
-                    TextButton(
-                        onClick = { onReport(reason) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = reason,
-                            color = Color.White,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    TextButton(onClick = { onReport(reason) }, modifier = Modifier.fillMaxWidth()) {
+                        Text(text = reason, color = Color(0xFF1A1A1A), modifier = Modifier.fillMaxWidth())
                     }
                     HorizontalDivider(color = DividerColor)
                 }
@@ -504,14 +534,10 @@ private fun ReportDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Atcelt", color = Color.Gray)
-            }
+            TextButton(onClick = onDismiss) { Text("Atcelt", color = Color(0xFF757575)) }
         }
     )
 }
-
-// ── Time formatter ────────────────────────────────────────────────────────────
 
 object PostCardTimeFormatter {
     fun formatTimeAgo(timeMillis: Long): String {

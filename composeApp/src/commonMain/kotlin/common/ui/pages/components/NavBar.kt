@@ -18,18 +18,18 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import common.ui.pages.Screen
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 
 @Composable
 fun NavBar(
     currentScreen: Screen,
     onHome: () -> Unit,
     onSearch: () -> Unit,
-    onAddPost: () -> Unit, // <-- New
+    onAddPost: () -> Unit,
     onMessages: () -> Unit,
     onProfile: () -> Unit
 ) {
-    BottomAppBar(containerColor = Color.Black) {
+    BottomAppBar(containerColor = Color(0xFFF5F5F5)) {
 
         NavItem(
             selected = currentScreen == Screen.Home,
@@ -70,14 +70,14 @@ private fun RowScope.AddPostButton(onClick: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(52.dp)
-                .background(RyderRed, CircleShape)
+                .background(RyderAccent, CircleShape)
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Jauna ziņa",
-                tint = Color.White,
+                tint = Color(0xFF1A1A1A),
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -91,7 +91,7 @@ private fun RowScope.NavItem(
     onClick: () -> Unit
 ) {
     val backgroundColor by animateColorAsState(
-        targetValue = if (selected) RyderRed else Color.Transparent,
+        targetValue = if (selected) RyderAccent else Color.Transparent,
         animationSpec = spring(),
         label = ""
     )
@@ -119,7 +119,7 @@ private fun RowScope.NavItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color.White
+                tint = if (selected) Color(0xFF1A1A1A) else Color(0xFF757575)
             )
         }
     }

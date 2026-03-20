@@ -55,12 +55,12 @@ fun ShareToUserDialog(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF1A1A1A))
+                .background(Color(0xFFF5F5F5))
                 .padding(16.dp)
         ) {
             Text(
                 text = "Sūtīt draugam",
-                color = Color.White,
+                color = Color(0xFF1A1A1A),
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
             )
@@ -69,12 +69,12 @@ fun ShareToUserDialog(
             if (sentToNickname != null) {
                 Text(
                     text = "Nosūtīts uz $sentToNickname!",
-                    color = RyderRed,
+                    color = RyderAccent,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
                 TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                    Text("Aizvērt", color = Color.White)
+                    Text("Aizvērt", color = Color(0xFF757575))
                 }
                 return@Column
             }
@@ -82,15 +82,15 @@ fun ShareToUserDialog(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Meklēt lietotāju...", color = Color.Gray) },
+                placeholder = { Text("Meklēt lietotāju...", color = Color(0xFF9E9E9E)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = RyderRed,
-                    unfocusedBorderColor = Color.Gray,
-                    cursorColor = RyderRed
+                    focusedTextColor = Color(0xFF1A1A1A),
+                    unfocusedTextColor = Color(0xFF1A1A1A),
+                    focusedBorderColor = RyderAccent,
+                    unfocusedBorderColor = Color(0xFF9E9E9E),
+                    cursorColor = RyderAccent
                 ),
                 singleLine = true
             )
@@ -99,7 +99,7 @@ fun ShareToUserDialog(
             if (results.isEmpty() && query.length >= 2) {
                 Text(
                     text = "Nav atrasts neviens lietotājs",
-                    color = Color.Gray,
+                    color = Color(0xFF757575),
                     fontSize = 13.sp,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
@@ -138,29 +138,29 @@ fun ShareToUserDialog(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(Color.Gray),
+                                .background(Color(0xFFD0D0D0)),
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = RyderRed) {
+                        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = RyderAccent) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = user.nickname.take(1).uppercase(),
-                                    color = Color.White,
+                                    color = Color(0xFF1A1A1A),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = user.nickname, color = Color.White, fontSize = 15.sp)
+                    Text(text = user.nickname, color = Color(0xFF1A1A1A), fontSize = 15.sp)
                 }
-                HorizontalDivider(color = Color(0xFF2D2D2D))
+                HorizontalDivider(color = Color(0xFFD9D9D9))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                Text("Atcelt", color = Color.Gray)
+                Text("Atcelt", color = Color(0xFF757575))
             }
         }
     }

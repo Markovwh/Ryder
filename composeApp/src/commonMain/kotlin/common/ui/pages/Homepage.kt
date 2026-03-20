@@ -16,8 +16,7 @@ import common.data.PostRepository
 import common.model.Post
 import common.model.User
 import common.ui.pages.components.PostCard
-
-private val RyderRed = Color(0xFFD32F2F)
+import common.ui.pages.components.RyderAccent
 
 @Composable
 fun Homepage(
@@ -33,7 +32,7 @@ fun Homepage(
         repository.listenToPosts { posts = it }
     }
 
-    Scaffold(containerColor = Color.Black) { paddingValues ->
+    Scaffold(containerColor = Color(0xFFEEEEEE)) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -43,26 +42,27 @@ fun Homepage(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(Color(0xFFF5F5F5))
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Ryder",
-                    color = RyderRed,
+                    color = RyderAccent,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
                 if (!isUserLoggedIn) {
                     TextButton(onClick = onLoginClick) {
-                        Text("Pieslēgties", color = Color.White)
+                        Text("Pieslēgties", color = Color(0xFF1A1A1A))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = onRegisterClick,
-                        colors = ButtonDefaults.buttonColors(containerColor = RyderRed)
+                        colors = ButtonDefaults.buttonColors(containerColor = RyderAccent)
                     ) {
-                        Text("Reģistrēties")
+                        Text("Reģistrēties", color = Color.White)
                     }
                 }
             }

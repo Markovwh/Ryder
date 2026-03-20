@@ -31,7 +31,23 @@ class EventRepository {
         eventsRef.document(eventId).update("attendeeIds", FieldValue.arrayRemove(userId)).await()
     }
 
+    suspend fun updateEvent(event: Event) {
+        eventsRef.document(event.id).set(event).await()
+    }
+
     suspend fun deleteEvent(eventId: String) {
         eventsRef.document(eventId).delete().await()
+    }
+
+    suspend fun searchEvents(query: String): List<Event> {
+        if (query.isBlank()) return emptyList()
+        val snap = eventsRef.get().await()
+        return snap.toObjects(Event::class.java)
+            .filter {
+                it.name.contains(query, ignoreCase = true) ||
+                it.place.contains(query, ignoreCase = true) ||
+                it.description.contains(query, ignoreCase = true)
+            }
+            .take(20)
     }
 }

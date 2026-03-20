@@ -21,4 +21,5 @@ sealed class Screen {
     ) : Screen()
     data class GroupDetail(val groupId: String) : Screen()
     data class EventDetail(val eventId: String) : Screen()
+    object Admin : Screen()
 }

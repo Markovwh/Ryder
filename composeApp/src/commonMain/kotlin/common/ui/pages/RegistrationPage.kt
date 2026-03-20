@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 
 @Composable
 fun RegistrationPage(
@@ -49,19 +49,19 @@ fun RegistrationPage(
     val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$".toRegex()
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color.White,
-        unfocusedTextColor = Color.White,
-        focusedBorderColor = RyderRed,
-        unfocusedBorderColor = Color.Gray,
-        focusedLabelColor = RyderRed,
-        unfocusedLabelColor = Color.Gray,
-        cursorColor = RyderRed
+        focusedTextColor = Color(0xFF1A1A1A),
+        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedBorderColor = RyderAccent,
+        unfocusedBorderColor = Color(0xFF9E9E9E),
+        focusedLabelColor = RyderAccent,
+        unfocusedLabelColor = Color(0xFF757575),
+        cursorColor = RyderAccent
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color(0xFFEEEEEE))
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -69,21 +69,17 @@ fun RegistrationPage(
 
         Text(
             text = "Register",
-            color = RyderRed,
+            color = RyderAccent,
             fontSize = 34.sp,
             fontWeight = FontWeight.Bold
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // EMAIL
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
-            value =email,
-            onValueChange = {
-                email = it
-                emailError = null
-            },
+            value = email,
+            onValueChange = { email = it; emailError = null },
             label = { Text("Email") },
             isError = emailError != null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -91,72 +87,56 @@ fun RegistrationPage(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        emailError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
+        emailError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // NICKNAME
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
-            value =nickname,
-            onValueChange = {
-                nickname = it
-                nicknameError = null
-            },
+            value = nickname,
+            onValueChange = { nickname = it; nicknameError = null },
             label = { Text("Nickname") },
             isError = nicknameError != null,
             colors = textFieldColors,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        nicknameError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
+        nicknameError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // FIRST NAME
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
-            value =firstName,
-            onValueChange = {
-                firstName = it
-                firstNameError = null
-            },
+            value = firstName,
+            onValueChange = { firstName = it; firstNameError = null },
             label = { Text("First Name") },
             isError = firstNameError != null,
             colors = textFieldColors,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        firstNameError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
+        firstNameError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // LAST NAME
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
-            value =lastName,
-            onValueChange = {
-                lastName = it
-                lastNameError = null
-            },
+            value = lastName,
+            onValueChange = { lastName = it; lastNameError = null },
             label = { Text("Last Name") },
             isError = lastNameError != null,
             colors = textFieldColors,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        lastNameError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
+        lastNameError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // PASSWORD
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
-            value =password,
-            onValueChange = {
-                password = it
-                passwordError = null
-            },
+            value = password,
+            onValueChange = { password = it; passwordError = null },
             label = { Text("Password") },
             isError = passwordError != null,
             visualTransformation = PasswordVisualTransformation(),
@@ -164,18 +144,14 @@ fun RegistrationPage(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        passwordError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
+        passwordError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // CONFIRM PASSWORD
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
-            value =confirmPassword,
-            onValueChange = {
-                confirmPassword = it
-                confirmPasswordError = null
-            },
+            value = confirmPassword,
+            onValueChange = { confirmPassword = it; confirmPasswordError = null },
             label = { Text("Confirm Password") },
             isError = confirmPasswordError != null,
             visualTransformation = PasswordVisualTransformation(),
@@ -183,88 +159,46 @@ fun RegistrationPage(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        confirmPasswordError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
+        confirmPasswordError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
 
         backendError?.let {
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = it,
-                color = Color.Red,
-                fontSize = 13.sp
-            )
+            Text(it, color = Color(0xFFE53935), fontSize = 13.sp)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {
-
                 var valid = true
-
-                if (email.isBlank()) {
-                    emailError = "Email is required"
-                    valid = false
-                } else if (!email.matches(emailRegex)) {
-                    emailError = "Invalid email format"
-                    valid = false
-                }
-
-                if (nickname.isBlank()) {
-                    nicknameError = "Nickname is required"
-                    valid = false
-                }
-
-                if (firstName.isBlank()) {
-                    firstNameError = "First name is required"
-                    valid = false
-                }
-
-                if (lastName.isBlank()) {
-                    lastNameError = "Last name is required"
-                    valid = false
-                }
-
-                if (password.isBlank()) {
-                    passwordError = "Password is required"
-                    valid = false
-                } else if (password.length < 8) {
-                    passwordError = "Password must be at least 8 characters"
-                    valid = false
-                }
-
-                if (confirmPassword.isBlank()) {
-                    confirmPasswordError = "Please confirm your password"
-                    valid = false
-                } else if (password != confirmPassword) {
-                    confirmPasswordError = "Passwords do not match"
-                    valid = false
-                }
-
-                if (valid) {
-                    onRegister(email, password, nickname, firstName, lastName)
-                }
+                if (email.isBlank()) { emailError = "Email is required"; valid = false }
+                else if (!email.matches(emailRegex)) { emailError = "Invalid email format"; valid = false }
+                if (nickname.isBlank()) { nicknameError = "Nickname is required"; valid = false }
+                if (firstName.isBlank()) { firstNameError = "First name is required"; valid = false }
+                if (lastName.isBlank()) { lastNameError = "Last name is required"; valid = false }
+                if (password.isBlank()) { passwordError = "Password is required"; valid = false }
+                else if (password.length < 8) { passwordError = "Password must be at least 8 characters"; valid = false }
+                if (confirmPassword.isBlank()) { confirmPasswordError = "Please confirm your password"; valid = false }
+                else if (password != confirmPassword) { confirmPasswordError = "Passwords do not match"; valid = false }
+                if (valid) onRegister(email, password, nickname, firstName, lastName)
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = RyderRed,
+                containerColor = RyderAccent,
                 contentColor = Color.White
             ),
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
-            Text("Create Account")
+            Text("Create Account", fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = buildAnnotatedString {
-                append("Already registered? Sign in instead")
-            },
-            color = RyderRed,
+            text = buildAnnotatedString { append("Already registered? Sign in instead") },
+            color = RyderAccent,
             fontSize = 14.sp,
             textDecoration = TextDecoration.Underline,
-            modifier = Modifier.clickable {
-                onLoginClick()
-            }
+            modifier = Modifier.clickable { onLoginClick() }
         )
     }
 }

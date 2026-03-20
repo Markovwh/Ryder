@@ -16,7 +16,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 
 @Composable
 fun LoginPage(
@@ -34,38 +34,36 @@ fun LoginPage(
     var passwordError by remember { mutableStateOf<String?>(null) }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color.White,
-        unfocusedTextColor = Color.White,
-        focusedBorderColor = RyderRed,
-        unfocusedBorderColor = Color.Gray,
-        focusedLabelColor = RyderRed,
-        unfocusedLabelColor = Color.Gray,
-        cursorColor = RyderRed
+        focusedTextColor = Color(0xFF1A1A1A),
+        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedBorderColor = RyderAccent,
+        unfocusedBorderColor = Color(0xFF9E9E9E),
+        focusedLabelColor = RyderAccent,
+        unfocusedLabelColor = Color(0xFF757575),
+        cursorColor = RyderAccent
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color(0xFFEEEEEE))
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // Title
         Text(
             text = "Pieslēgties",
-            color = RyderRed,
+            color = RyderAccent,
             fontSize = 34.sp,
             fontWeight = FontWeight.Bold
         )
 
         Spacer(Modifier.height(8.dp))
 
-        // Sign up link below title, underlined
         Text(
             text = "Nav konta? Reģistrēties.",
-            color = RyderRed,
+            color = RyderAccent,
             fontSize = 14.sp,
             textDecoration = TextDecoration.Underline,
             modifier = Modifier.clickable { onRegisterClick() }
@@ -73,14 +71,10 @@ fun LoginPage(
 
         Spacer(Modifier.height(24.dp))
 
-        // Email field
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
-            value =email,
-            onValueChange = {
-                email = it
-                emailError = null
-            },
+            value = email,
+            onValueChange = { email = it; emailError = null },
             label = { Text("E-pasts") },
             isError = emailError != null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -88,18 +82,14 @@ fun LoginPage(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        emailError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
+        emailError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
 
         Spacer(Modifier.height(12.dp))
 
-        // Password field
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
-            value =password,
-            onValueChange = {
-                password = it
-                passwordError = null
-            },
+            value = password,
+            onValueChange = { password = it; passwordError = null },
             label = { Text("Parole") },
             isError = passwordError != null,
             visualTransformation = PasswordVisualTransformation(),
@@ -107,11 +97,10 @@ fun LoginPage(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        passwordError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
+        passwordError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
 
         Spacer(Modifier.height(12.dp))
 
-        // Remember Me checkbox
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -121,39 +110,37 @@ fun LoginPage(
             Checkbox(
                 checked = rememberMe,
                 onCheckedChange = { rememberMe = it },
-                colors = CheckboxDefaults.colors(checkedColor = RyderRed)
+                colors = CheckboxDefaults.colors(checkedColor = RyderAccent)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Atcerēties mani", color = Color.White)
+            Text(text = "Atcerēties mani", color = Color(0xFF1A1A1A))
         }
 
         Spacer(Modifier.height(12.dp))
 
-        // Login button
         Button(
             onClick = {
                 var valid = true
                 if (email.isBlank()) { emailError = "E-pasts ir obligāts"; valid = false }
                 if (password.isBlank()) { passwordError = "Parole ir obligāta"; valid = false }
-                if (valid) onLogin(email.trim(), password, rememberMe)  // pass rememberMe
+                if (valid) onLogin(email.trim(), password, rememberMe)
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = RyderRed,
+                containerColor = RyderAccent,
                 contentColor = Color.White
             ),
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
-            Text("Pieslēgties")
+            Text("Pieslēgties", fontWeight = FontWeight.Bold)
         }
 
         Spacer(Modifier.height(12.dp))
 
-        // Continue as Guest button
         Button(
             onClick = { onContinueAsGuest() },
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Gray,
-                contentColor = Color.White
+                containerColor = Color(0xFFE0E0E0),
+                contentColor = Color(0xFF1A1A1A)
             ),
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
@@ -162,10 +149,9 @@ fun LoginPage(
 
         Spacer(Modifier.height(12.dp))
 
-        // Forgot password link
         Text(
             text = "Aizmirsāt paroli?",
-            color = RyderRed,
+            color = RyderAccent,
             fontSize = 14.sp,
             modifier = Modifier.clickable {
                 if (email.isNotBlank()) {
@@ -178,11 +164,7 @@ fun LoginPage(
 
         backendError?.let {
             Spacer(Modifier.height(12.dp))
-            Text(
-                text = it,
-                color = Color.Red,
-                fontSize = 13.sp
-            )
+            Text(it, color = Color(0xFFE53935), fontSize = 13.sp)
         }
     }
 }

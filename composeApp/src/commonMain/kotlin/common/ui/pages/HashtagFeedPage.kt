@@ -18,7 +18,7 @@ import common.data.PostRepository
 import common.model.Post
 import common.model.User
 import common.ui.pages.components.PostCard
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,16 +33,14 @@ fun HashtagFeedPage(
 
     LaunchedEffect(hashtag) {
         isLoading = true
-        try {
-            posts = repository.getPostsByHashtag(hashtag)
-        } catch (_: Exception) {}
+        try { posts = repository.getPostsByHashtag(hashtag) } catch (_: Exception) {}
         isLoading = false
     }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = Color(0xFFEEEEEE),
         topBar = {
-            Surface(color = Color(0xFF111111), tonalElevation = 0.dp) {
+            Surface(color = Color(0xFFF5F5F5), tonalElevation = 0.dp) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -51,11 +49,11 @@ fun HashtagFeedPage(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color(0xFF1A1A1A))
                     }
                     Text(
                         text = "#$hashtag",
-                        color = RyderRed,
+                        color = RyderAccent,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -64,40 +62,28 @@ fun HashtagFeedPage(
         }
     ) { padding ->
         when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = RyderRed)
+            isLoading -> Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) { CircularProgressIndicator(color = RyderAccent) }
+            posts.isEmpty() -> Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) { Text("Nav ierakstu ar #$hashtag", color = Color(0xFF757575), fontSize = 14.sp) }
+            else -> LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                item {
+                    Text(
+                        text = "${posts.size} ierakst${if (posts.size == 1) "s" else "i"}",
+                        color = Color(0xFF757575),
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 }
-            }
-            posts.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Nav ierakstu ar #$hashtag", color = Color.Gray, fontSize = 14.sp)
-                }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    item {
-                        Text(
-                            text = "${posts.size} ierakst${if (posts.size == 1) "s" else "i"}",
-                            color = Color.Gray,
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-                    items(posts, key = { it.id }) { post ->
-                        PostCard(post = post, currentUser = currentUser)
-                    }
+                items(posts, key = { it.id }) { post ->
+                    PostCard(post = post, currentUser = currentUser)
                 }
             }
         }

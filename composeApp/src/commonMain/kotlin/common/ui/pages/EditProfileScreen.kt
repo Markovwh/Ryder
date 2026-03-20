@@ -23,13 +23,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import common.data.AuthService
 import common.data.PostRepository
 import common.model.User
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
 
 @Composable
@@ -44,6 +45,7 @@ fun EditProfileScreen(
     var lastName by remember { mutableStateOf(user.lastName) }
     var bio by remember { mutableStateOf(user.bio) }
     var bike by remember { mutableStateOf(user.bike) }
+    var experienceYears by remember { mutableStateOf(if (user.experienceYears > 0) user.experienceYears.toString() else "") }
     var profilePrivacy by remember { mutableStateOf(user.profilePrivacy) }
     var pickedUri by remember { mutableStateOf<Uri?>(null) }
     var isSaving by remember { mutableStateOf(false) }
@@ -58,34 +60,34 @@ fun EditProfileScreen(
     ) { uri -> if (uri != null) pickedUri = uri }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color.White,
-        unfocusedTextColor = Color.White,
-        focusedBorderColor = RyderRed,
-        unfocusedBorderColor = Color.Gray,
-        focusedLabelColor = RyderRed,
-        unfocusedLabelColor = Color.Gray,
-        cursorColor = RyderRed
+        focusedTextColor = Color(0xFF1A1A1A),
+        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedBorderColor = RyderAccent,
+        unfocusedBorderColor = Color(0xFF9E9E9E),
+        focusedLabelColor = RyderAccent,
+        unfocusedLabelColor = Color(0xFF757575),
+        cursorColor = RyderAccent
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color(0xFFEEEEEE))
     ) {
-        // Top bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(Color(0xFFF5F5F5))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(onClick = onCancel) {
-                Icon(Icons.Default.Close, contentDescription = "Atcelt", tint = Color.White)
+                Icon(Icons.Default.Close, contentDescription = "Atcelt", tint = Color(0xFF1A1A1A))
             }
             Text(
                 text = "Rediģēt profilu",
-                color = Color.White,
+                color = Color(0xFF1A1A1A),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -110,6 +112,7 @@ fun EditProfileScreen(
                                 lastName = lastName.trim(),
                                 bio = bio.trim(),
                                 bike = bike.trim(),
+                                experienceYears = experienceYears.trim().toIntOrNull() ?: 0,
                                 profilePrivacy = profilePrivacy,
                                 profilePicture = newPictureUrl
                             )
@@ -128,16 +131,16 @@ fun EditProfileScreen(
                 },
                 enabled = !isSaving,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = RyderRed,
+                    containerColor = RyderAccent,
                     contentColor = Color.White,
-                    disabledContainerColor = Color.DarkGray
+                    disabledContainerColor = Color(0xFFCCCCCC)
                 ),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 if (isSaving) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
-                        color = Color.White,
+                        color = Color(0xFF1A1A1A),
                         strokeWidth = 2.dp
                     )
                 } else {
@@ -146,7 +149,7 @@ fun EditProfileScreen(
             }
         }
 
-        HorizontalDivider(color = Color.DarkGray)
+        HorizontalDivider(color = Color(0xFFD9D9D9))
 
         Column(
             modifier = Modifier
@@ -156,7 +159,6 @@ fun EditProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Profile picture picker
             Box(contentAlignment = Alignment.BottomEnd) {
                 Image(
                     painter = rememberAsyncImagePainter(
@@ -166,8 +168,8 @@ fun EditProfileScreen(
                     modifier = Modifier
                         .size(100.dp)
                         .clip(CircleShape)
-                        .background(Color.Gray)
-                        .border(2.dp, RyderRed, CircleShape)
+                        .background(Color(0xFFD0D0D0))
+                        .border(2.dp, RyderAccent, CircleShape)
                         .clickable {
                             imagePicker.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -178,7 +180,7 @@ fun EditProfileScreen(
                 Box(
                     modifier = Modifier
                         .size(28.dp)
-                        .background(RyderRed, CircleShape)
+                        .background(RyderAccent, CircleShape)
                         .clickable {
                             imagePicker.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -186,13 +188,13 @@ fun EditProfileScreen(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("✎", color = Color.White, fontSize = 14.sp)
+                    Text("✎", color = Color(0xFF1A1A1A), fontSize = 14.sp)
                 }
             }
 
             Text(
                 text = "Mainīt profila bildi",
-                color = RyderRed,
+                color = RyderAccent,
                 fontSize = 13.sp,
                 modifier = Modifier.clickable {
                     imagePicker.launch(
@@ -201,10 +203,9 @@ fun EditProfileScreen(
                 }
             )
 
-            // Nickname
             OutlinedTextField(
                 shape = RoundedCornerShape(12.dp),
-                value =nickname,
+                value = nickname,
                 onValueChange = { nickname = it; nicknameError = null },
                 label = { Text("Segvārds") },
                 isError = nicknameError != null,
@@ -212,12 +213,11 @@ fun EditProfileScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            nicknameError?.let { Text(it, color = Color.Red, fontSize = 12.sp) }
+            nicknameError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
 
-            // First name
             OutlinedTextField(
                 shape = RoundedCornerShape(12.dp),
-                value =firstName,
+                value = firstName,
                 onValueChange = { firstName = it },
                 label = { Text("Vārds") },
                 colors = textFieldColors,
@@ -225,10 +225,9 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Last name
             OutlinedTextField(
                 shape = RoundedCornerShape(12.dp),
-                value =lastName,
+                value = lastName,
                 onValueChange = { lastName = it },
                 label = { Text("Uzvārds") },
                 colors = textFieldColors,
@@ -236,13 +235,12 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Bio
             OutlinedTextField(
                 shape = RoundedCornerShape(12.dp),
-                value =bio,
+                value = bio,
                 onValueChange = { bio = it },
                 label = { Text("Par sevi") },
-                placeholder = { Text("Pastāsti par sevi...", color = Color.Gray) },
+                placeholder = { Text("Pastāsti par sevi...", color = Color(0xFF9E9E9E)) },
                 colors = textFieldColors,
                 maxLines = 4,
                 modifier = Modifier
@@ -250,36 +248,48 @@ fun EditProfileScreen(
                     .heightIn(min = 80.dp)
             )
 
-            // Bike
             OutlinedTextField(
                 shape = RoundedCornerShape(12.dp),
-                value =bike,
+                value = bike,
                 onValueChange = { bike = it },
                 label = { Text("Motocikls") },
-                placeholder = { Text("piem. Honda CB500F", color = Color.Gray) },
+                placeholder = { Text("piem. Honda CB500F", color = Color(0xFF9E9E9E)) },
                 colors = textFieldColors,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Privacy
+            OutlinedTextField(
+                shape = RoundedCornerShape(12.dp),
+                value = experienceYears,
+                onValueChange = { if (it.all { c -> c.isDigit() } && it.length <= 2) experienceYears = it },
+                label = { Text("Braukšanas pieredze (gadi)") },
+                placeholder = { Text("piem. 5", color = Color(0xFF9E9E9E)) },
+                colors = textFieldColors,
+                singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Profila privātums", color = Color.Gray, fontSize = 13.sp)
+                Text("Profila privātums", color = Color(0xFF757575), fontSize = 13.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("Publisks", "Privāts").forEach { option ->
                         val selected = profilePrivacy == option
                         OutlinedButton(
                             onClick = { profilePrivacy = option },
                             colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (selected) RyderRed else Color.Transparent,
-                                contentColor = Color.White
+                                containerColor = if (selected) RyderAccent else Color.Transparent,
+                                contentColor = Color(0xFF1A1A1A)
                             ),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (selected) RyderRed else Color.Gray
+                                if (selected) RyderAccent else Color(0xFF9E9E9E)
                             )
                         ) {
                             Text(option)
@@ -289,7 +299,7 @@ fun EditProfileScreen(
             }
 
             errorMessage?.let {
-                Text(it, color = Color.Red, fontSize = 13.sp)
+                Text(it, color = Color(0xFFE53935), fontSize = 13.sp)
             }
         }
     }

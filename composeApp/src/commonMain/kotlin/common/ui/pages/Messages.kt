@@ -33,7 +33,7 @@ import common.model.Conversation
 import common.model.Event
 import common.model.Group
 import common.model.User
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -75,11 +75,11 @@ fun MessagesPage(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFEEEEEE))) {
         Column(modifier = Modifier.fillMaxSize()) {
             Text(
                 text = "Ziņas",
-                color = RyderRed,
+                color = RyderAccent,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(start = 24.dp, top = 20.dp, bottom = 12.dp)
@@ -87,16 +87,16 @@ fun MessagesPage(
 
             TabRow(
                 selectedTabIndex = selectedTab,
-                containerColor = Color.Black,
-                contentColor = RyderRed,
+                containerColor = Color(0xFFF5F5F5),
+                contentColor = RyderAccent,
                 divider = {}
             ) {
                 listOf("Ziņas", "Grupas", "Notikumi").forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
-                        selectedContentColor = RyderRed,
-                        unselectedContentColor = Color.Gray,
+                        selectedContentColor = RyderAccent,
+                        unselectedContentColor = Color(0xFF757575),
                         text = {
                             Text(
                                 title,
@@ -108,7 +108,7 @@ fun MessagesPage(
                 }
             }
 
-            HorizontalDivider(color = Color(0xFF1E1E1E))
+            HorizontalDivider(color = Color(0xFFD9D9D9))
 
             when (selectedTab) {
                 0 -> {
@@ -117,7 +117,7 @@ fun MessagesPage(
                             modifier = Modifier.fillMaxSize().padding(bottom = 80.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("Nav sarunu. Sāc jaunu!", color = Color.Gray, fontSize = 14.sp)
+                            Text("Nav sarunu. Sāc jaunu!", color = Color(0xFF757575), fontSize = 14.sp)
                         }
                     } else {
                         LazyColumn(
@@ -156,9 +156,9 @@ fun MessagesPage(
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Nav grupu", color = Color.Gray, fontSize = 14.sp)
+                                Text("Nav grupu", color = Color(0xFF757575), fontSize = 14.sp)
                                 Spacer(Modifier.height(8.dp))
-                                Text("Izveido vai pievienojies grupai!", color = Color.DarkGray, fontSize = 12.sp)
+                                Text("Izveido vai pievienojies grupai!", color = Color(0xFF9E9E9E), fontSize = 12.sp)
                             }
                         }
                     } else {
@@ -187,9 +187,9 @@ fun MessagesPage(
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Nav notikumu", color = Color.Gray, fontSize = 14.sp)
+                                Text("Nav notikumu", color = Color(0xFF757575), fontSize = 14.sp)
                                 Spacer(Modifier.height(8.dp))
-                                Text("Izveido pirmo notikumu!", color = Color.DarkGray, fontSize = 12.sp)
+                                Text("Izveido pirmo notikumu!", color = Color(0xFF9E9E9E), fontSize = 12.sp)
                             }
                         }
                     } else {
@@ -201,7 +201,7 @@ fun MessagesPage(
                                 item {
                                     Text(
                                         "Gaidāmie",
-                                        color = Color.Gray,
+                                        color = Color(0xFF757575),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -219,7 +219,7 @@ fun MessagesPage(
                                 item {
                                     Text(
                                         "Pagājušie",
-                                        color = Color.Gray,
+                                        color = Color(0xFF757575),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -256,7 +256,7 @@ fun MessagesPage(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 24.dp, bottom = 96.dp),
-            containerColor = RyderRed
+            containerColor = RyderAccent
         ) {
             Icon(fabIcon, contentDescription = null, tint = Color.White)
         }
@@ -286,6 +286,7 @@ private fun GroupRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(Color(0xFFF5F5F5))
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -294,15 +295,15 @@ private fun GroupRow(
             Image(
                 painter = rememberAsyncImagePainter(group.pictureUrl),
                 contentDescription = null,
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.Gray),
+                modifier = Modifier.size(48.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
                 contentScale = ContentScale.Crop
             )
         } else {
-            Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = RyderRed) {
+            Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = RyderAccent) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         group.name.take(1).uppercase(),
-                        color = Color.White,
+                        color = Color(0xFF1A1A1A),
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -311,10 +312,10 @@ private fun GroupRow(
         }
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(group.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text(group.name, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             Text(
                 "${group.memberIds.size} biedri",
-                color = Color.Gray,
+                color = Color(0xFF757575),
                 fontSize = 13.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -326,11 +327,11 @@ private fun GroupRow(
             else -> null
         }
         role?.let {
-            Text(it, color = RyderRed, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text(it, color = RyderAccent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
     }
     HorizontalDivider(
-        color = Color(0xFF1E1E1E),
+        color = Color(0xFFD9D9D9),
         thickness = 0.5.dp,
         modifier = Modifier.padding(start = 84.dp)
     )
@@ -347,6 +348,7 @@ private fun EventRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(Color(0xFFF5F5F5))
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -354,23 +356,23 @@ private fun EventRow(
         Surface(
             modifier = Modifier.size(48.dp),
             shape = CircleShape,
-            color = Color(0xFF1A1A1A)
+            color = Color(0xFFEEEEEE)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     Icons.Default.Event,
                     contentDescription = null,
-                    tint = RyderRed,
+                    tint = RyderAccent,
                     modifier = Modifier.size(24.dp)
                 )
             }
         }
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(event.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text(event.name, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             Text(
                 "${formatEventDate(event.dateTime)} · ${event.place}",
-                color = Color.Gray,
+                color = Color(0xFF757575),
                 fontSize = 13.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -379,11 +381,11 @@ private fun EventRow(
         if (currentUserId != null && currentUserId in event.attendeeIds) {
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = RyderRed.copy(alpha = 0.15f)
+                color = RyderAccent.copy(alpha = 0.15f)
             ) {
                 Text(
                     "Apmeklēju",
-                    color = RyderRed,
+                    color = RyderAccent,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -392,7 +394,7 @@ private fun EventRow(
         }
     }
     HorizontalDivider(
-        color = Color(0xFF1E1E1E),
+        color = Color(0xFFD9D9D9),
         thickness = 0.5.dp,
         modifier = Modifier.padding(start = 84.dp)
     )
@@ -411,6 +413,7 @@ private fun ConversationRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(Color(0xFFF5F5F5))
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -422,15 +425,15 @@ private fun ConversationRow(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(Color.Gray),
+                    .background(Color(0xFFD0D0D0)),
                 contentScale = ContentScale.Crop
             )
         } else {
-            Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = RyderRed) {
+            Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = RyderAccent) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         text = nickname.take(1).uppercase(),
-                        color = Color.White,
+                        color = Color(0xFF1A1A1A),
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -441,24 +444,24 @@ private fun ConversationRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = nickname,
-                color = Color.White,
+                color = Color(0xFF1A1A1A),
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 15.sp
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = lastMessage.ifEmpty { "..." },
-                color = Color.Gray,
+                color = Color(0xFF757575),
                 fontSize = 13.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text = formatConvTime(lastUpdated), color = Color.Gray, fontSize = 11.sp)
+        Text(text = formatConvTime(lastUpdated), color = Color(0xFF757575), fontSize = 11.sp)
     }
     HorizontalDivider(
-        color = Color(0xFF1E1E1E),
+        color = Color(0xFFD9D9D9),
         thickness = 0.5.dp,
         modifier = Modifier.padding(start = 84.dp)
     )
@@ -492,12 +495,12 @@ private fun NewChatDialog(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF1A1A1A))
+                .background(Color(0xFFF5F5F5))
                 .padding(16.dp)
         ) {
             Text(
                 text = "Jauna saruna",
-                color = Color.White,
+                color = Color(0xFF1A1A1A),
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
             )
@@ -505,15 +508,15 @@ private fun NewChatDialog(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Meklēt lietotāju...", color = Color.Gray) },
+                placeholder = { Text("Meklēt lietotāju...", color = Color(0xFF9E9E9E)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = RyderRed,
-                    unfocusedBorderColor = Color.Gray,
-                    cursorColor = RyderRed
+                    focusedTextColor = Color(0xFF1A1A1A),
+                    unfocusedTextColor = Color(0xFF1A1A1A),
+                    focusedBorderColor = RyderAccent,
+                    unfocusedBorderColor = Color(0xFF9E9E9E),
+                    cursorColor = RyderAccent
                 ),
                 singleLine = true
             )
@@ -521,7 +524,7 @@ private fun NewChatDialog(
             if (results.isEmpty() && query.length >= 2) {
                 Text(
                     text = "Nav atrasts neviens lietotājs",
-                    color = Color.Gray,
+                    color = Color(0xFF757575),
                     fontSize = 13.sp,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
@@ -532,19 +535,18 @@ private fun NewChatDialog(
                         .fillMaxWidth()
                         .clickable {
                             val cu = currentUser ?: return@clickable
+                            val convId = repo.conversationId(cu.uid, user.uid)
                             scope.launch {
-                                try {
-                                    val convId = repo.getOrCreateConversation(cu, user)
-                                    onOpenChat(
-                                        Screen.Chat(
-                                            conversationId = convId,
-                                            otherUserId = user.uid,
-                                            otherUserNickname = user.nickname,
-                                            otherUserPicture = user.profilePicture
-                                        )
-                                    )
-                                } catch (_: Exception) {}
+                                try { repo.getOrCreateConversation(cu, user) } catch (_: Exception) {}
                             }
+                            onOpenChat(
+                                Screen.Chat(
+                                    conversationId = convId,
+                                    otherUserId = user.uid,
+                                    otherUserNickname = user.nickname,
+                                    otherUserPicture = user.profilePicture
+                                )
+                            )
                         }
                         .padding(vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -557,28 +559,28 @@ private fun NewChatDialog(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(Color.Gray),
+                                .background(Color(0xFFD0D0D0)),
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = RyderRed) {
+                        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = RyderAccent) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = user.nickname.take(1).uppercase(),
-                                    color = Color.White,
+                                    color = Color(0xFF1A1A1A),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = user.nickname, color = Color.White, fontSize = 15.sp)
+                    Text(text = user.nickname, color = Color(0xFF1A1A1A), fontSize = 15.sp)
                 }
-                HorizontalDivider(color = Color(0xFF2D2D2D))
+                HorizontalDivider(color = Color(0xFFD9D9D9))
             }
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                Text("Atcelt", color = Color.Gray)
+                Text("Atcelt", color = Color(0xFF757575))
             }
         }
     }

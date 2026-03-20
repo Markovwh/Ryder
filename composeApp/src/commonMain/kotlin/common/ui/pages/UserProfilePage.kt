@@ -38,7 +38,7 @@ import common.data.UserRepository
 import common.model.Post
 import common.model.User
 import common.ui.pages.components.PostDetailDialog
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
 
 @Composable
@@ -82,9 +82,9 @@ fun UserProfilePage(
     }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = Color(0xFFEEEEEE),
         topBar = {
-            Surface(color = Color(0xFF111111), tonalElevation = 0.dp) {
+            Surface(color = Color(0xFFF5F5F5), tonalElevation = 0.dp) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -93,11 +93,11 @@ fun UserProfilePage(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color(0xFF1A1A1A))
                     }
                     Text(
                         text = user?.nickname ?: "",
-                        color = Color.White,
+                        color = Color(0xFF1A1A1A),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 17.sp,
                         modifier = Modifier.weight(1f)
@@ -105,7 +105,7 @@ fun UserProfilePage(
                     if (currentUser != null) {
                         Box {
                             IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color.Gray)
+                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color(0xFF757575))
                             }
                             DropdownMenu(
                                 expanded = showMenu,
@@ -136,14 +136,14 @@ fun UserProfilePage(
     ) { padding ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = RyderRed)
+                CircularProgressIndicator(color = RyderAccent)
             }
             return@Scaffold
         }
 
         val u = user ?: run {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Lietotājs nav atrasts", color = Color.Gray)
+                Text("Lietotājs nav atrasts", color = Color(0xFF757575))
             }
             return@Scaffold
         }
@@ -159,6 +159,7 @@ fun UserProfilePage(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(Color(0xFFF5F5F5))
                         .padding(horizontal = 20.dp, vertical = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -168,15 +169,15 @@ fun UserProfilePage(
                         Image(
                             painter = rememberAsyncImagePainter(pic),
                             contentDescription = null,
-                            modifier = Modifier.size(90.dp).clip(CircleShape).background(Color.Gray),
+                            modifier = Modifier.size(90.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Surface(modifier = Modifier.size(90.dp), shape = CircleShape, color = RyderRed) {
+                        Surface(modifier = Modifier.size(90.dp), shape = CircleShape, color = RyderAccent) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = u.nickname.take(1).uppercase(),
-                                    color = Color.White,
+                                    color = Color(0xFF1A1A1A),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 36.sp
                                 )
@@ -186,17 +187,25 @@ fun UserProfilePage(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Text(u.nickname, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text(u.nickname, color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     if (u.firstName.isNotEmpty() || u.lastName.isNotEmpty()) {
-                        Text("${u.firstName} ${u.lastName}".trim(), color = Color.Gray, fontSize = 14.sp)
+                        Text("${u.firstName} ${u.lastName}".trim(), color = Color(0xFF757575), fontSize = 14.sp)
                     }
                     if (u.bio.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(u.bio, color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center)
+                        Text(u.bio, color = Color(0xFF1A1A1A), fontSize = 14.sp, textAlign = TextAlign.Center)
                     }
                     if (u.bike.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("🏍 ${u.bike}", color = Color.Gray, fontSize = 13.sp)
+                        Text("🏍 ${u.bike}", color = Color(0xFF757575), fontSize = 13.sp)
+                    }
+                    if (u.experienceYears > 0) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "⏱ ${u.experienceYears} ${if (u.experienceYears == 1) "gads" else "gadi"} pieredze",
+                            color = Color(0xFF757575),
+                            fontSize = 13.sp
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -248,10 +257,10 @@ fun UserProfilePage(
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isFollowing) Color.Transparent else RyderRed,
-                                    contentColor = if (isFollowing) RyderRed else Color.White
+                                    containerColor = if (isFollowing) Color.Transparent else RyderAccent,
+                                    contentColor = if (isFollowing) RyderAccent else Color(0xFF1A1A1A)
                                 ),
-                                border = if (isFollowing) androidx.compose.foundation.BorderStroke(1.dp, RyderRed) else null,
+                                border = if (isFollowing) androidx.compose.foundation.BorderStroke(1.dp, RyderAccent) else null,
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(if (isFollowing) "Nesekot" else "Sekot")
@@ -260,22 +269,21 @@ fun UserProfilePage(
                             // Message
                             OutlinedButton(
                                 onClick = {
+                                    val convId = msgRepo.conversationId(currentUser.uid, u.uid)
                                     scope.launch {
-                                        try {
-                                            val convId = msgRepo.getOrCreateConversation(currentUser, u)
-                                            onOpenChat(
-                                                Screen.Chat(
-                                                    conversationId = convId,
-                                                    otherUserId = u.uid,
-                                                    otherUserNickname = u.nickname,
-                                                    otherUserPicture = u.profilePicture
-                                                )
-                                            )
-                                        } catch (_: Exception) {}
+                                        try { msgRepo.getOrCreateConversation(currentUser, u) } catch (_: Exception) {}
                                     }
+                                    onOpenChat(
+                                        Screen.Chat(
+                                            conversationId = convId,
+                                            otherUserId = u.uid,
+                                            otherUserNickname = u.nickname,
+                                            otherUserPicture = u.profilePicture
+                                        )
+                                    )
                                 },
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1A1A1A)),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF9E9E9E)),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Icon(
@@ -289,7 +297,7 @@ fun UserProfilePage(
                         }
                     }
                 }
-                HorizontalDivider(color = Color(0xFF2D2D2D))
+                HorizontalDivider(color = Color(0xFFD9D9D9))
             }
 
             // ── Blocked state ────────────────────────────────────────────────
@@ -299,7 +307,7 @@ fun UserProfilePage(
                         modifier = Modifier.fillMaxWidth().padding(40.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Šis lietotājs ir bloķēts.", color = Color.Gray, fontSize = 14.sp, textAlign = TextAlign.Center)
+                        Text("Šis lietotājs ir bloķēts.", color = Color(0xFF757575), fontSize = 14.sp, textAlign = TextAlign.Center)
                     }
                 }
                 return@LazyColumn
@@ -312,10 +320,10 @@ fun UserProfilePage(
                         modifier = Modifier.fillMaxWidth().padding(40.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(Icons.Default.Lock, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
+                        Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF757575), modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("Privāts profils", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                        Text("Seko šim lietotājam, lai redzētu viņa ierakstus.", color = Color.Gray, fontSize = 14.sp, textAlign = TextAlign.Center)
+                        Text("Privāts profils", color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                        Text("Seko šim lietotājam, lai redzētu viņa ierakstus.", color = Color(0xFF757575), fontSize = 14.sp, textAlign = TextAlign.Center)
                     }
                 }
                 return@LazyColumn
@@ -325,7 +333,7 @@ fun UserProfilePage(
             if (posts.isEmpty()) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                        Text("Nav ierakstu", color = Color.Gray, fontSize = 14.sp)
+                        Text("Nav ierakstu", color = Color(0xFF757575), fontSize = 14.sp)
                     }
                 }
             } else {
@@ -338,7 +346,7 @@ fun UserProfilePage(
                                     .weight(1f)
                                     .aspectRatio(1f)
                                     .padding(1.dp)
-                                    .background(Color(0xFF1A1A1A))
+                                    .background(Color(0xFFD0D0D0))
                                     .clickable { selectedPost = post }
                             ) {
                                 if (post.mediaUrls.isNotEmpty()) {
@@ -351,7 +359,7 @@ fun UserProfilePage(
                                 } else if (post.description.isNotEmpty()) {
                                     Text(
                                         text = post.description,
-                                        color = Color.White,
+                                        color = Color(0xFF1A1A1A),
                                         fontSize = 11.sp,
                                         maxLines = 4,
                                         overflow = TextOverflow.Ellipsis,
@@ -386,9 +394,9 @@ fun UserProfilePage(
     if (showBlockConfirm) {
         AlertDialog(
             onDismissRequest = { showBlockConfirm = false },
-            containerColor = Color(0xFF1A1A1A),
-            title = { Text("Bloķēt lietotāju?", color = Color.White) },
-            text = { Text("Šis lietotājs vairs nevarēs redzēt tavu profilu un jūs abi pārstāsiet sekot viens otram.", color = Color.Gray) },
+            containerColor = Color(0xFFF5F5F5),
+            title = { Text("Bloķēt lietotāju?", color = Color(0xFF1A1A1A)) },
+            text = { Text("Šis lietotājs vairs nevarēs redzēt tavu profilu un jūs abi pārstāsiet sekot viens otram.", color = Color(0xFF757575)) },
             confirmButton = {
                 TextButton(onClick = {
                     showBlockConfirm = false
@@ -400,10 +408,10 @@ fun UserProfilePage(
                             isFollowing = false
                         } catch (_: Exception) {}
                     }
-                }) { Text("Bloķēt", color = RyderRed) }
+                }) { Text("Bloķēt", color = Color(0xFFE53935)) }
             },
             dismissButton = {
-                TextButton(onClick = { showBlockConfirm = false }) { Text("Atcelt", color = Color.Gray) }
+                TextButton(onClick = { showBlockConfirm = false }) { Text("Atcelt", color = Color(0xFF757575)) }
             }
         )
     }
@@ -458,7 +466,7 @@ private fun FollowListDialog(
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.7f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF1A1A1A))
+                .background(Color(0xFFF5F5F5))
         ) {
             // Header
             Row(
@@ -469,26 +477,26 @@ private fun FollowListDialog(
             ) {
                 Text(
                     text = if (type == FollowListType.FOLLOWERS) "Sekotāji" else "Seko",
-                    color = Color.White,
+                    color = Color(0xFF1A1A1A),
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = onDismiss) { Text("Aizvērt", color = Color.Gray) }
+                TextButton(onClick = onDismiss) { Text("Aizvērt", color = Color(0xFF757575)) }
             }
-            HorizontalDivider(color = Color(0xFF2D2D2D))
+            HorizontalDivider(color = Color(0xFFD9D9D9))
 
             when {
                 isLoading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = RyderRed, modifier = Modifier.size(28.dp))
+                        CircularProgressIndicator(color = RyderAccent, modifier = Modifier.size(28.dp))
                     }
                 }
                 users.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
                             text = if (type == FollowListType.FOLLOWERS) "Nav sekotāju" else "Neseko nevienam",
-                            color = Color.Gray,
+                            color = Color(0xFF757575),
                             fontSize = 14.sp
                         )
                     }
@@ -508,15 +516,15 @@ private fun FollowListDialog(
                                     Image(
                                         painter = rememberAsyncImagePainter(pic),
                                         contentDescription = null,
-                                        modifier = Modifier.size(44.dp).clip(CircleShape).background(Color.Gray),
+                                        modifier = Modifier.size(44.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
                                         contentScale = ContentScale.Crop
                                     )
                                 } else {
-                                    Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = RyderRed) {
+                                    Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = RyderAccent) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
                                                 text = u.nickname.take(1).uppercase(),
-                                                color = Color.White,
+                                                color = Color(0xFF1A1A1A),
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 18.sp
                                             )
@@ -525,13 +533,13 @@ private fun FollowListDialog(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text(u.nickname, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                                    Text(u.nickname, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                                     if (u.firstName.isNotEmpty() || u.lastName.isNotEmpty()) {
-                                        Text("${u.firstName} ${u.lastName}".trim(), color = Color.Gray, fontSize = 13.sp)
+                                        Text("${u.firstName} ${u.lastName}".trim(), color = Color(0xFF757575), fontSize = 13.sp)
                                     }
                                 }
                             }
-                            HorizontalDivider(color = Color(0xFF2D2D2D))
+                            HorizontalDivider(color = Color(0xFFD9D9D9))
                         }
                     }
                 }
@@ -548,7 +556,7 @@ private fun ClickableStat(label: String, value: String, onClick: (() -> Unit)?) 
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     ) {
-        Text(text = value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        Text(text = label, color = if (onClick != null) Color.LightGray else Color.Gray, fontSize = 12.sp)
+        Text(text = value, color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text(text = label, color = Color(0xFF757575), fontSize = 12.sp)
     }
 }

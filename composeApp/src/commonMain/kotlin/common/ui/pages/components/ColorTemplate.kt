@@ -2,4 +2,4 @@ package common.ui.pages.components
 
 import androidx.compose.ui.graphics.Color
 
-public val RyderRed = Color(0xFFD32F2F)
+public val RyderAccent = Color(0xFF2678AB)

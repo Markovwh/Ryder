@@ -149,6 +149,12 @@ class PostRepository {
             .sortedByDescending { it.createdAt }
     }
 
+    // ── Edit ──────────────────────────────────────────────────────────────────
+
+    suspend fun updatePost(postId: String, description: String) {
+        postsRef.document(postId).update("description", description).await()
+    }
+
     // ── Delete ────────────────────────────────────────────────────────────────
 
     suspend fun deletePost(postId: String) {

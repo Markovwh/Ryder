@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 import common.data.EventRepository
 import common.model.Event
 import common.model.User
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -38,6 +38,10 @@ fun EventDetailPage(
     var isLoading by remember { mutableStateOf(true) }
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf("") }
+    var editPlace by remember { mutableStateOf("") }
+    var editDescription by remember { mutableStateOf("") }
 
     LaunchedEffect(eventId) {
         isLoading = true
@@ -49,10 +53,20 @@ fun EventDetailPage(
     val isCreator = e != null && currentUser != null && e.creatorId == currentUser.uid
     val isAttending = e != null && currentUser != null && currentUser.uid in e.attendeeIds
 
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color(0xFF1A1A1A),
+        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedBorderColor = RyderAccent,
+        unfocusedBorderColor = Color(0xFF9E9E9E),
+        focusedLabelColor = RyderAccent,
+        unfocusedLabelColor = Color(0xFF757575),
+        cursorColor = RyderAccent
+    )
+
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = Color(0xFFEEEEEE),
         topBar = {
-            Surface(color = Color(0xFF111111)) {
+            Surface(color = Color(0xFFF5F5F5)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -61,11 +75,11 @@ fun EventDetailPage(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color(0xFF1A1A1A))
                     }
                     Text(
                         text = e?.name ?: "Notikums",
-                        color = Color.White,
+                        color = Color(0xFF1A1A1A),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 17.sp,
                         modifier = Modifier.weight(1f)
@@ -73,11 +87,21 @@ fun EventDetailPage(
                     if (isCreator) {
                         Box {
                             IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color.Gray)
+                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color(0xFF757575))
                             }
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("Dzēst notikumu", color = Color(0xFFFF4444)) },
+                                    text = { Text("Rediģēt notikumu") },
+                                    onClick = {
+                                        showMenu = false
+                                        editName = e?.name ?: ""
+                                        editPlace = e?.place ?: ""
+                                        editDescription = e?.description ?: ""
+                                        showEditDialog = true
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Dzēst notikumu", color = Color(0xFFE53935)) },
                                     onClick = { showMenu = false; showDeleteConfirm = true }
                                 )
                             }
@@ -89,13 +113,13 @@ fun EventDetailPage(
     ) { padding ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = RyderRed)
+                CircularProgressIndicator(color = RyderAccent)
             }
             return@Scaffold
         }
         if (e == null) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Notikums nav atrasts", color = Color.Gray)
+                Text("Notikums nav atrasts", color = Color(0xFF757575))
             }
             return@Scaffold
         }
@@ -108,17 +132,17 @@ fun EventDetailPage(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF1A1A1A))
+                        .background(Color(0xFFF5F5F5))
                         .padding(28.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Surface(modifier = Modifier.size(72.dp), shape = CircleShape, color = RyderRed) {
+                        Surface(modifier = Modifier.size(72.dp), shape = CircleShape, color = RyderAccent) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     Icons.Default.Event,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = Color(0xFF1A1A1A),
                                     modifier = Modifier.size(36.dp)
                                 )
                             }
@@ -126,18 +150,18 @@ fun EventDetailPage(
                         Spacer(Modifier.height(16.dp))
                         Text(
                             e.name,
-                            color = Color.White,
+                            color = Color(0xFF1A1A1A),
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp
                         )
                         Spacer(Modifier.height(4.dp))
-                        Text("Organizē: ${e.creatorNickname}", color = Color.Gray, fontSize = 13.sp)
+                        Text("Organizē: ${e.creatorNickname}", color = Color(0xFF757575), fontSize = 13.sp)
                     }
                 }
             }
 
             item {
-                Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFF5F5F5)).padding(20.dp)) {
                     EventInfoRow(icon = Icons.Default.Place, label = "Vieta", value = e.place)
                     Spacer(Modifier.height(16.dp))
                     EventInfoRow(
@@ -150,7 +174,7 @@ fun EventDetailPage(
                         EventInfoRow(icon = Icons.Default.Info, label = "Apraksts", value = e.description)
                     }
                     Spacer(Modifier.height(24.dp))
-                    HorizontalDivider(color = Color(0xFF2D2D2D))
+                    HorizontalDivider(color = Color(0xFFD9D9D9))
                     Spacer(Modifier.height(20.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -160,12 +184,12 @@ fun EventDetailPage(
                         Column {
                             Text(
                                 "${e.attendeeIds.size} apmeklētāji",
-                                color = Color.White,
+                                color = Color(0xFF1A1A1A),
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp
                             )
                             if (isAttending) {
-                                Text("Tu apmeklē šo notikumu", color = RyderRed, fontSize = 12.sp)
+                                Text("Tu apmeklē šo notikumu", color = RyderAccent, fontSize = 12.sp)
                             }
                         }
                         if (currentUser != null) {
@@ -185,11 +209,11 @@ fun EventDetailPage(
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isAttending) Color.Transparent else RyderRed,
-                                    contentColor = if (isAttending) RyderRed else Color.White
+                                    containerColor = if (isAttending) Color.Transparent else RyderAccent,
+                                    contentColor = if (isAttending) RyderAccent else Color(0xFF1A1A1A)
                                 ),
                                 border = if (isAttending)
-                                    androidx.compose.foundation.BorderStroke(1.dp, RyderRed) else null,
+                                    androidx.compose.foundation.BorderStroke(1.dp, RyderAccent) else null,
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Icon(
@@ -210,9 +234,9 @@ fun EventDetailPage(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            containerColor = Color(0xFF1A1A1A),
-            title = { Text("Dzēst notikumu?", color = Color.White) },
-            text = { Text("Šo darbību nevar atsaukt.", color = Color.Gray) },
+            containerColor = Color(0xFFF5F5F5),
+            title = { Text("Dzēst notikumu?", color = Color(0xFF1A1A1A)) },
+            text = { Text("Šo darbību nevar atsaukt.", color = Color(0xFF757575)) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
@@ -220,12 +244,67 @@ fun EventDetailPage(
                         try { repo.deleteEvent(eventId) } catch (_: Exception) {}
                         onBack()
                     }
-                }) { Text("Dzēst", color = Color(0xFFFF4444)) }
+                }) { Text("Dzēst", color = Color(0xFFE53935)) }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Atcelt", color = Color.Gray)
+                    Text("Atcelt", color = Color(0xFF757575))
                 }
+            }
+        )
+    }
+
+    if (showEditDialog && e != null) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            containerColor = Color(0xFFF5F5F5),
+            title = { Text("Rediģēt notikumu", color = Color(0xFF1A1A1A)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Nosaukums") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = fieldColors
+                    )
+                    OutlinedTextField(
+                        value = editPlace,
+                        onValueChange = { editPlace = it },
+                        label = { Text("Vieta") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = fieldColors
+                    )
+                    OutlinedTextField(
+                        value = editDescription,
+                        onValueChange = { editDescription = it },
+                        label = { Text("Apraksts") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = fieldColors,
+                        minLines = 2
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val updated = e.copy(
+                        name = editName.trim().ifEmpty { e.name },
+                        place = editPlace.trim().ifEmpty { e.place },
+                        description = editDescription.trim()
+                    )
+                    showEditDialog = false
+                    scope.launch {
+                        try {
+                            repo.updateEvent(updated)
+                            event = updated
+                        } catch (_: Exception) {}
+                    }
+                }) { Text("Saglabāt", color = RyderAccent) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) { Text("Atcelt", color = Color(0xFF757575)) }
             }
         )
     }
@@ -234,12 +313,12 @@ fun EventDetailPage(
 @Composable
 private fun EventInfoRow(icon: ImageVector, label: String, value: String) {
     Row(verticalAlignment = Alignment.Top) {
-        Icon(icon, contentDescription = null, tint = RyderRed, modifier = Modifier.size(20.dp))
+        Icon(icon, contentDescription = null, tint = RyderAccent, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(12.dp))
         Column {
-            Text(label, color = Color.Gray, fontSize = 12.sp)
+            Text(label, color = Color(0xFF757575), fontSize = 12.sp)
             Spacer(Modifier.height(2.dp))
-            Text(value, color = Color.White, fontSize = 15.sp)
+            Text(value, color = Color(0xFF1A1A1A), fontSize = 15.sp)
         }
     }
 }

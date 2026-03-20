@@ -44,7 +44,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
 
     Scaffold(
         bottomBar = {
-            if (currentScreen !in listOf(Screen.Registration, Screen.Login, Screen.EditProfile, Screen.CreateGroup, Screen.CreateEvent)
+            if (currentScreen !in listOf(Screen.Registration, Screen.Login, Screen.EditProfile, Screen.CreateGroup, Screen.CreateEvent, Screen.Admin)
                 && currentScreen !is Screen.Chat
                 && currentScreen !is Screen.UserProfile
                 && currentScreen !is Screen.HashtagFeed
@@ -144,6 +144,12 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                 },
                 onOpenHashtag = { hashtag ->
                     currentScreen = Screen.HashtagFeed(hashtag)
+                },
+                onOpenGroup = { groupId ->
+                    currentScreen = Screen.GroupDetail(groupId)
+                },
+                onOpenEvent = { eventId ->
+                    currentScreen = Screen.EventDetail(eventId)
                 }
             )
 
@@ -251,10 +257,24 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                             isGuest = false
                             currentScreen = Screen.Login
                         },
-                        onEditProfile = { currentScreen = Screen.EditProfile }
+                        onEditProfile = { currentScreen = Screen.EditProfile },
+                        onOpenAdmin = if (currentUser?.isAdmin == true) {
+                            { currentScreen = Screen.Admin }
+                        } else null
                     )
                 } else {
                     currentScreen = Screen.Login
+                }
+            }
+
+            Screen.Admin -> {
+                if (!isGuest && currentUser?.isAdmin == true) {
+                    AdminPage(
+                        currentUser = currentUser,
+                        onBack = { currentScreen = Screen.Profile }
+                    )
+                } else {
+                    currentScreen = Screen.Profile
                 }
             }
 

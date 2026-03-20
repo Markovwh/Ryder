@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 
 package common.ui.pages
 
@@ -14,9 +14,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,7 +36,7 @@ import common.data.MessageRepository
 import common.model.Message
 import common.model.User
 import common.ui.pages.components.PostCardTimeFormatter
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
 
 @Composable
@@ -47,12 +50,26 @@ fun ChatScreen(
     var inputText by remember { mutableStateOf("") }
     var selectedUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var isSending by remember { mutableStateOf(false) }
+    var showTopMenu by remember { mutableStateOf(false) }
+    var showDeleteConversationConfirm by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
     val mediaPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia()
     ) { uris -> selectedUris = uris }
+
+    // Ensure the conversation document exists with full participant data.
+    // Also keyed on currentUser?.uid so it retries if currentUser loads after the screen opens.
+    LaunchedEffect(chat.conversationId, currentUser?.uid) {
+        val cu = currentUser ?: return@LaunchedEffect
+        val otherUser = common.model.User(
+            uid = chat.otherUserId,
+            nickname = chat.otherUserNickname,
+            profilePicture = chat.otherUserPicture
+        )
+        try { repo.getOrCreateConversation(cu, otherUser) } catch (_: Exception) {}
+    }
 
     DisposableEffect(chat.conversationId) {
         val unsub = repo.listenToMessages(chat.conversationId) { msgs ->
@@ -65,9 +82,9 @@ fun ChatScreen(
     }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = Color(0xFFEEEEEE),
         topBar = {
-            Surface(color = Color(0xFF111111), tonalElevation = 0.dp) {
+            Surface(color = Color(0xFFF5F5F5), tonalElevation = 0.dp) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -76,7 +93,7 @@ fun ChatScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color(0xFF1A1A1A))
                     }
                     val pic = chat.otherUserPicture
                     if (pic != null) {
@@ -86,15 +103,15 @@ fun ChatScreen(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .background(Color.Gray),
+                                .background(Color(0xFFD0D0D0)),
                             contentScale = ContentScale.Crop
                         )
                     } else {
-                        Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = RyderRed) {
+                        Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = RyderAccent) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = chat.otherUserNickname.take(1).uppercase(),
-                                    color = Color.White,
+                                    color = Color(0xFF1A1A1A),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -103,15 +120,30 @@ fun ChatScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = chat.otherUserNickname,
-                        color = Color.White,
+                        color = Color(0xFF1A1A1A),
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        modifier = Modifier.weight(1f)
                     )
+                    Box {
+                        IconButton(onClick = { showTopMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color(0xFF757575))
+                        }
+                        DropdownMenu(
+                            expanded = showTopMenu,
+                            onDismissRequest = { showTopMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Dzēst sarunu", color = Color(0xFFE53935)) },
+                                onClick = { showTopMenu = false; showDeleteConversationConfirm = true }
+                            )
+                        }
+                    }
                 }
             }
         },
         bottomBar = {
-            Surface(color = Color(0xFF111111)) {
+            Surface(color = Color(0xFFF5F5F5)) {
                 Column(
                     modifier = Modifier
                         .navigationBarsPadding()
@@ -131,7 +163,7 @@ fun ChatScreen(
                                     modifier = Modifier
                                         .size(56.dp)
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color.DarkGray),
+                                        .background(Color(0xFFD0D0D0)),
                                     contentScale = ContentScale.Crop
                                 )
                             }
@@ -140,10 +172,10 @@ fun ChatScreen(
                                     modifier = Modifier
                                         .size(56.dp)
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFF2A2A2A)),
+                                        .background(Color(0xFFEEEEEE)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("+${selectedUris.size - 4}", color = Color.White, fontSize = 14.sp)
+                                    Text("+${selectedUris.size - 4}", color = Color(0xFF1A1A1A), fontSize = 14.sp)
                                 }
                             }
                         }
@@ -159,20 +191,20 @@ fun ChatScreen(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
                             )
                         }) {
-                            Icon(Icons.Default.Image, contentDescription = "Pievienot mediju", tint = Color.Gray)
+                            Icon(Icons.Default.Image, contentDescription = "Pievienot mediju", tint = Color(0xFF757575))
                         }
                         OutlinedTextField(
                             value = inputText,
                             onValueChange = { inputText = it },
-                            placeholder = { Text("Raksti ziņu...", color = Color.Gray) },
+                            placeholder = { Text("Raksti ziņu...", color = Color(0xFF9E9E9E)) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(24.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = RyderRed,
-                                unfocusedBorderColor = Color.Gray,
-                                cursorColor = RyderRed
+                                focusedTextColor = Color(0xFF1A1A1A),
+                                unfocusedTextColor = Color(0xFF1A1A1A),
+                                focusedBorderColor = RyderAccent,
+                                unfocusedBorderColor = Color(0xFF9E9E9E),
+                                cursorColor = RyderAccent
                             ),
                             singleLine = true
                         )
@@ -207,7 +239,7 @@ fun ChatScreen(
                             Icon(
                                 Icons.Default.Send,
                                 contentDescription = "Sūtīt",
-                                tint = if (isSending) Color.Gray else RyderRed
+                                tint = if (isSending) Color(0xFF9E9E9E) else RyderAccent
                             )
                         }
                     }
@@ -225,64 +257,120 @@ fun ChatScreen(
         ) {
             items(messages, key = { it.id }) { message ->
                 val isMine = message.senderId == currentUser?.uid
-                MessageBubble(message = message, isMine = isMine)
+                MessageBubble(
+                    message = message,
+                    isMine = isMine,
+                    onDelete = if (isMine) {
+                        {
+                            scope.launch {
+                                try {
+                                    repo.deleteMessage(chat.conversationId, message.id)
+                                    messages = messages.filter { it.id != message.id }
+                                } catch (_: Exception) {}
+                            }
+                        }
+                    } else null
+                )
             }
         }
+    }
+
+    // Delete entire conversation dialog
+    if (showDeleteConversationConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConversationConfirm = false },
+            containerColor = Color(0xFFF5F5F5),
+            title = { Text("Dzēst sarunu?", color = Color(0xFF1A1A1A)) },
+            text = { Text("Visa saruna un ziņas tiks neatgriezeniski dzēstas.", color = Color(0xFF757575)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConversationConfirm = false
+                    scope.launch {
+                        try { repo.deleteConversation(chat.conversationId) } catch (_: Exception) {}
+                        onBack()
+                    }
+                }) { Text("Dzēst", color = Color(0xFFE53935)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConversationConfirm = false }) { Text("Atcelt", color = Color(0xFF757575)) }
+            }
+        )
     }
 }
 
 @Composable
-private fun MessageBubble(message: Message, isMine: Boolean) {
-    val bubbleColor = if (isMine) RyderRed else Color(0xFF2A2A2A)
+private fun MessageBubble(message: Message, isMine: Boolean, onDelete: (() -> Unit)? = null) {
+    val bubbleColor = if (isMine) RyderAccent else Color(0xFFE0E0E0)
     val alignment = if (isMine) Alignment.End else Alignment.Start
     val shape = if (isMine) {
         RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 4.dp)
     } else {
         RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
     }
+    var showMenu by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = alignment
     ) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .clip(shape)
-                .background(bubbleColor)
-                .padding(10.dp)
-        ) {
-            if (message.hasSharedPost) {
-                SharedPostPreview(
-                    nickname = message.sharedPostUserNickname,
-                    description = message.sharedPostDescription,
-                    mediaUrl = message.sharedPostMediaUrl.takeIf { it.isNotEmpty() }
-                )
-                if (message.text.isNotEmpty()) Spacer(modifier = Modifier.height(6.dp))
-            }
-            if (message.mediaUrls.isNotEmpty()) {
-                message.mediaUrls.forEach { url ->
-                    Image(
-                        painter = rememberAsyncImagePainter(url),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 200.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.DarkGray),
-                        contentScale = ContentScale.Crop
+        Box {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 280.dp)
+                    .clip(shape)
+                    .background(bubbleColor)
+                    .combinedClickable(
+                        onClick = {},
+                        onLongClick = { if (onDelete != null) showMenu = true }
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    .padding(10.dp)
+            ) {
+                if (message.hasSharedPost) {
+                    SharedPostPreview(
+                        nickname = message.sharedPostUserNickname,
+                        description = message.sharedPostDescription,
+                        mediaUrl = message.sharedPostMediaUrl.takeIf { it.isNotEmpty() }
+                    )
+                    if (message.text.isNotEmpty()) Spacer(modifier = Modifier.height(6.dp))
+                }
+                if (message.mediaUrls.isNotEmpty()) {
+                    message.mediaUrls.forEach { url ->
+                        Image(
+                            painter = rememberAsyncImagePainter(url),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 200.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFFD0D0D0)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+                if (message.text.isNotEmpty()) {
+                    Text(text = message.text, color = Color(0xFF1A1A1A), fontSize = 14.sp)
                 }
             }
-            if (message.text.isNotEmpty()) {
-                Text(text = message.text, color = Color.White, fontSize = 14.sp)
+            if (onDelete != null) {
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Dzēst", color = Color(0xFFE53935)) },
+                        onClick = {
+                            showMenu = false
+                            onDelete()
+                        }
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = PostCardTimeFormatter.formatTimeAgo(message.createdAt),
-            color = Color.Gray,
+            color = Color(0xFF757575),
             fontSize = 10.sp,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
@@ -300,12 +388,12 @@ private fun SharedPostPreview(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.Black.copy(alpha = 0.4f))
+            .background(Color(0xFF000000).copy(alpha = 0.08f))
             .padding(8.dp)
     ) {
         Text(
             text = "📸 $nickname",
-            color = Color.White,
+            color = Color(0xFF1A1A1A),
             fontWeight = FontWeight.SemiBold,
             fontSize = 12.sp
         )
@@ -318,7 +406,7 @@ private fun SharedPostPreview(
                     .fillMaxWidth()
                     .height(100.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color.DarkGray),
+                    .background(Color(0xFFD0D0D0)),
                 contentScale = ContentScale.Crop
             )
         }
@@ -326,7 +414,7 @@ private fun SharedPostPreview(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = if (description.length > 80) description.take(80) + "..." else description,
-                color = Color.LightGray,
+                color = Color(0xFF757575),
                 fontSize = 12.sp,
                 maxLines = 2
             )

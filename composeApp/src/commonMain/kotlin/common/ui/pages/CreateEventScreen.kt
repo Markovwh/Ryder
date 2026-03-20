@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import common.data.EventRepository
 import common.model.Event
 import common.model.User
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -58,10 +58,20 @@ fun CreateEventScreen(
 
     val timeText = String.format("%02d:%02d", selectedHour, selectedMinute)
 
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color(0xFF1A1A1A),
+        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedBorderColor = RyderAccent,
+        unfocusedBorderColor = Color(0xFF9E9E9E),
+        focusedLabelColor = RyderAccent,
+        unfocusedLabelColor = Color(0xFF757575),
+        cursorColor = RyderAccent
+    )
+
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = Color(0xFFEEEEEE),
         topBar = {
-            Surface(color = Color(0xFF111111)) {
+            Surface(color = Color(0xFFF5F5F5)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -70,11 +80,11 @@ fun CreateEventScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.Default.Close, contentDescription = "Atcelt", tint = Color.White)
+                        Icon(Icons.Default.Close, contentDescription = "Atcelt", tint = Color(0xFF1A1A1A))
                     }
                     Text(
                         "Izveidot notikumu",
-                        color = Color.White,
+                        color = Color(0xFF1A1A1A),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 17.sp,
                         modifier = Modifier.weight(1f)
@@ -113,7 +123,7 @@ fun CreateEventScreen(
                     ) {
                         Text(
                             "Izveidot",
-                            color = if (!isLoading) RyderRed else Color.Gray,
+                            color = if (!isLoading) RyderAccent else Color(0xFF9E9E9E),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -131,17 +141,10 @@ fun CreateEventScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it; error = null },
-                label = { Text("Nosaukums *", color = Color.Gray) },
+                label = { Text("Nosaukums *") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = RyderRed,
-                    unfocusedBorderColor = Color.Gray,
-                    focusedLabelColor = RyderRed,
-                    cursorColor = RyderRed
-                ),
+                colors = fieldColors,
                 singleLine = true
             )
 
@@ -150,19 +153,12 @@ fun CreateEventScreen(
             OutlinedTextField(
                 value = place,
                 onValueChange = { place = it; error = null },
-                label = { Text("Vieta *", color = Color.Gray) },
+                label = { Text("Vieta *") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = RyderRed,
-                    unfocusedBorderColor = Color.Gray,
-                    focusedLabelColor = RyderRed,
-                    cursorColor = RyderRed
-                ),
+                colors = fieldColors,
                 leadingIcon = {
-                    Icon(Icons.Default.Place, contentDescription = null, tint = Color.Gray)
+                    Icon(Icons.Default.Place, contentDescription = null, tint = Color(0xFF757575))
                 },
                 singleLine = true
             )
@@ -175,7 +171,7 @@ fun CreateEventScreen(
                     .fillMaxWidth()
                     .border(
                         1.dp,
-                        if (selectedDateMillis != null) RyderRed else Color.Gray,
+                        if (selectedDateMillis != null) RyderAccent else Color(0xFF9E9E9E),
                         RoundedCornerShape(12.dp)
                     )
                     .clickable { showDatePicker = true }
@@ -185,13 +181,13 @@ fun CreateEventScreen(
                 Icon(
                     Icons.Default.CalendarMonth,
                     contentDescription = null,
-                    tint = if (selectedDateMillis != null) RyderRed else Color.Gray,
+                    tint = if (selectedDateMillis != null) RyderAccent else Color(0xFF757575),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(
                     dateText,
-                    color = if (selectedDateMillis != null) Color.White else Color.Gray,
+                    color = if (selectedDateMillis != null) Color(0xFF1A1A1A) else Color(0xFF757575),
                     fontSize = 16.sp
                 )
             }
@@ -202,7 +198,7 @@ fun CreateEventScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, Color.Gray, RoundedCornerShape(12.dp))
+                    .border(1.dp, Color(0xFF9E9E9E), RoundedCornerShape(12.dp))
                     .clickable { showTimePicker = true }
                     .padding(horizontal = 16.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -210,11 +206,11 @@ fun CreateEventScreen(
                 Icon(
                     Icons.Default.AccessTime,
                     contentDescription = null,
-                    tint = Color.Gray,
+                    tint = Color(0xFF757575),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(12.dp))
-                Text(timeText, color = Color.White, fontSize = 16.sp)
+                Text(timeText, color = Color(0xFF1A1A1A), fontSize = 16.sp)
             }
 
             Spacer(Modifier.height(16.dp))
@@ -222,31 +218,24 @@ fun CreateEventScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Apraksts", color = Color.Gray) },
+                label = { Text("Apraksts") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(140.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = RyderRed,
-                    unfocusedBorderColor = Color.Gray,
-                    focusedLabelColor = RyderRed,
-                    cursorColor = RyderRed
-                ),
+                colors = fieldColors,
                 maxLines = 6
             )
 
             error?.let {
                 Spacer(Modifier.height(12.dp))
-                Text(it, color = Color.Red, fontSize = 13.sp)
+                Text(it, color = Color(0xFFE53935), fontSize = 13.sp)
             }
 
             if (isLoading) {
                 Spacer(Modifier.height(24.dp))
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = RyderRed)
+                    CircularProgressIndicator(color = RyderAccent)
                 }
             }
         }
@@ -259,19 +248,19 @@ fun CreateEventScreen(
                 TextButton(onClick = {
                     selectedDateMillis = datePickerState.selectedDateMillis
                     showDatePicker = false
-                }) { Text("OK", color = RyderRed) }
+                }) { Text("OK", color = RyderAccent) }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("Atcelt", color = Color.Gray)
+                    Text("Atcelt", color = Color(0xFF757575))
                 }
             }
         ) {
             DatePicker(
                 state = datePickerState,
                 colors = DatePickerDefaults.colors(
-                    selectedDayContainerColor = RyderRed,
-                    todayDateBorderColor = RyderRed
+                    selectedDayContainerColor = RyderAccent,
+                    todayDateBorderColor = RyderAccent
                 )
             )
         }
@@ -280,14 +269,14 @@ fun CreateEventScreen(
     if (showTimePicker) {
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            containerColor = Color(0xFF1A1A1A),
-            title = { Text("Izvēlēties laiku", color = Color.White) },
+            containerColor = Color(0xFFF5F5F5),
+            title = { Text("Izvēlēties laiku", color = Color(0xFF1A1A1A)) },
             text = {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TimePicker(
                         state = timePickerState,
                         colors = TimePickerDefaults.colors(
-                            selectorColor = RyderRed
+                            selectorColor = RyderAccent
                         )
                     )
                 }
@@ -297,11 +286,11 @@ fun CreateEventScreen(
                     selectedHour = timePickerState.hour
                     selectedMinute = timePickerState.minute
                     showTimePicker = false
-                }) { Text("OK", color = RyderRed) }
+                }) { Text("OK", color = RyderAccent) }
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text("Atcelt", color = Color.Gray)
+                    Text("Atcelt", color = Color(0xFF757575))
                 }
             }
         )

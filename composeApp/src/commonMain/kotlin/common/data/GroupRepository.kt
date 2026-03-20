@@ -43,6 +43,20 @@ class GroupRepository {
         return snap.toObjects(Group::class.java).sortedByDescending { it.createdAt }
     }
 
+    suspend fun searchGroups(query: String): List<Group> {
+        if (query.isBlank()) return emptyList()
+        val snap = groupsRef.get().await()
+        return snap.toObjects(Group::class.java)
+            .filter {
+                it.name.contains(query, ignoreCase = true) ||
+                it.description.contains(query, ignoreCase = true)
+            }
+            .take(20)
+    }
+
+    suspend fun getAllGroups(): List<Group> =
+        groupsRef.get().await().toObjects(Group::class.java).sortedByDescending { it.createdAt }
+
     // ── Membership ────────────────────────────────────────────────────────────
 
     suspend fun addMember(groupId: String, userId: String) {

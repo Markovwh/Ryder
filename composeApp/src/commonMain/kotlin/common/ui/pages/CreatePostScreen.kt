@@ -31,7 +31,7 @@ import coil.compose.rememberAsyncImagePainter
 import common.data.PostRepository
 import common.model.Post
 import common.model.User
-import common.ui.pages.components.RyderRed
+import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
 
 @Composable
@@ -58,243 +58,228 @@ fun CreatePostScreen(
 
     val mediaPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia()
-    ) { uris ->
-        selectedUris = selectedUris + uris
-    }
+    ) { uris -> selectedUris = selectedUris + uris }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color.White,
-        unfocusedTextColor = Color.White,
-        focusedBorderColor = RyderRed,
-        unfocusedBorderColor = Color.Gray,
-        focusedLabelColor = RyderRed,
-        unfocusedLabelColor = Color.Gray,
-        cursorColor = RyderRed
+        focusedTextColor = Color(0xFF1A1A1A),
+        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedBorderColor = RyderAccent,
+        unfocusedBorderColor = Color(0xFF9E9E9E),
+        focusedLabelColor = RyderAccent,
+        unfocusedLabelColor = Color(0xFF757575),
+        cursorColor = RyderAccent
     )
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = Color(0xFFEEEEEE),
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .padding(innerPadding)
-    ) {
-        // Top bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(onClick = onCancel) {
-                Icon(Icons.Default.Close, contentDescription = "Aizvērt", tint = Color.White)
-            }
-            Text(
-                text = "Jauna ziņa",
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Button(
-                onClick = {
-                    if (description.isBlank() && selectedUris.isEmpty()) {
-                        errorMessage = "Pievienojiet aprakstu vai mediju"
-                        return@Button
-                    }
-                    isUploading = true
-                    errorMessage = null
-                    scope.launch {
-                        try {
-                            val uploadedUrls = selectedUris.map { uri ->
-                                repository.uploadMedia(uri, currentUser.uid)
-                            }
-                            val post = Post(
-                                userId = currentUser.uid,
-                                user = currentUser,
-                                mediaUrls = uploadedUrls,
-                                description = description.trim(),
-                                visibility = visibility
-                            )
-                            val savedPost = repository.createPost(post)
-                            onPostCreated(savedPost)
-                        } catch (e: Exception) {
-                            errorMessage = "Kļūda: ${e.localizedMessage}"
-                            isUploading = false
-                        }
-                    }
-                },
-                enabled = !isUploading,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = RyderRed,
-                    contentColor = Color.White,
-                    disabledContainerColor = Color.DarkGray
-                ),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                if (isUploading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Publicēt", fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        HorizontalDivider(color = Color.DarkGray)
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(Color(0xFFEEEEEE))
+                .padding(innerPadding)
         ) {
-            // User info row
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        currentUser.profilePicture ?: "https://picsum.photos/200"
-                    ),
-                    contentDescription = "Profila bilde",
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(Color.Gray),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = currentUser.nickname,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp
-                )
-            }
-
-            // Description field
-            OutlinedTextField(
-                shape = RoundedCornerShape(12.dp),
-                value = description,
-                onValueChange = { description = it },
-                placeholder = { Text("Raksti ko notiek...", color = Color.Gray) },
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 100.dp),
-                colors = textFieldColors,
-                maxLines = 8
-            )
-
-            // Media section
-            Text("Foto / Video", color = Color.Gray, fontSize = 13.sp)
-
-            if (selectedUris.isEmpty()) {
-                // Empty picker button
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                        .background(Color(0xFF1A1A1A), RoundedCornerShape(12.dp))
-                        .clickable {
-                            mediaPickerLauncher.launch(
-                                PickVisualMediaRequest(
-                                    ActivityResultContracts.PickVisualMedia.ImageAndVideo
+                    .background(Color(0xFFF5F5F5))
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(onClick = onCancel) {
+                    Icon(Icons.Default.Close, contentDescription = "Aizvērt", tint = Color(0xFF1A1A1A))
+                }
+                Text(
+                    text = "Jauna ziņa",
+                    color = Color(0xFF1A1A1A),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Button(
+                    onClick = {
+                        if (description.isBlank() && selectedUris.isEmpty()) {
+                            errorMessage = "Pievienojiet aprakstu vai mediju"
+                            return@Button
+                        }
+                        isUploading = true
+                        errorMessage = null
+                        scope.launch {
+                            try {
+                                val uploadedUrls = selectedUris.map { uri ->
+                                    repository.uploadMedia(uri, currentUser.uid)
+                                }
+                                val post = Post(
+                                    userId = currentUser.uid,
+                                    user = currentUser,
+                                    mediaUrls = uploadedUrls,
+                                    description = description.trim(),
+                                    visibility = visibility
                                 )
-                            )
-                        },
-                    contentAlignment = Alignment.Center
+                                val savedPost = repository.createPost(post)
+                                onPostCreated(savedPost)
+                            } catch (e: Exception) {
+                                errorMessage = "Kļūda: ${e.localizedMessage}"
+                                isUploading = false
+                            }
+                        }
+                    },
+                    enabled = !isUploading,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RyderAccent,
+                        contentColor = Color.White,
+                        disabledContainerColor = Color(0xFFCCCCCC)
+                    ),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = null,
-                            tint = RyderRed,
-                            modifier = Modifier.size(40.dp)
+                    if (isUploading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color(0xFF1A1A1A),
+                            strokeWidth = 2.dp
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Pievienot foto / video", color = Color.Gray, fontSize = 14.sp)
+                    } else {
+                        Text("Publicēt", fontWeight = FontWeight.Bold)
                     }
                 }
-            } else {
-                // Thumbnail row with remove and add-more
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(selectedUris) { uri ->
-                        Box(modifier = Modifier.size(120.dp)) {
-                            Image(
-                                painter = rememberAsyncImagePainter(uri),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color.DarkGray),
-                                contentScale = ContentScale.Crop
-                            )
-                            // Remove button
-                            IconButton(
-                                onClick = { selectedUris = selectedUris - uri },
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .size(28.dp)
-                                    .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                            ) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "Noņemt",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
+            }
+
+            HorizontalDivider(color = Color(0xFFD9D9D9))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            currentUser.profilePicture ?: "https://picsum.photos/200"
+                        ),
+                        contentDescription = "Profila bilde",
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFD0D0D0)),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = currentUser.nickname,
+                        color = Color(0xFF1A1A1A),
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp
+                    )
+                }
+
+                OutlinedTextField(
+                    shape = RoundedCornerShape(12.dp),
+                    value = description,
+                    onValueChange = { description = it },
+                    placeholder = { Text("Raksti ko notiek...", color = Color(0xFF9E9E9E)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 100.dp),
+                    colors = textFieldColors,
+                    maxLines = 8
+                )
+
+                Text("Foto / Video", color = Color(0xFF757575), fontSize = 13.sp)
+
+                if (selectedUris.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
+                            .clickable {
+                                mediaPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
                                 )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = null,
+                                tint = RyderAccent,
+                                modifier = Modifier.size(40.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Pievienot foto / video", color = Color(0xFF757575), fontSize = 14.sp)
+                        }
+                    }
+                } else {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(selectedUris) { uri ->
+                            Box(modifier = Modifier.size(120.dp)) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(uri),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFFD0D0D0)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                IconButton(
+                                    onClick = { selectedUris = selectedUris - uri },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .size(28.dp)
+                                        .background(Color(0xFF1A1A1A).copy(alpha = 0.5f), CircleShape)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Noņemt",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        mediaPickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Pievienot vairāk", tint = RyderAccent)
                             }
                         }
                     }
-                    // Add more button
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .size(120.dp)
-                                .background(Color(0xFF1A1A1A), RoundedCornerShape(8.dp))
-                                .clickable {
-                                    mediaPickerLauncher.launch(
-                                        PickVisualMediaRequest(
-                                            ActivityResultContracts.PickVisualMedia.ImageAndVideo
-                                        )
-                                    )
-                                },
-                            contentAlignment = Alignment.Center
+                }
+
+                Text("Privātums", color = Color(0xFF757575), fontSize = 13.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Publisks", "Draugi", "Privāts").forEach { option ->
+                        val selected = visibility == option
+                        OutlinedButton(
+                            onClick = { visibility = option },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (selected) RyderAccent else Color.Transparent,
+                                contentColor = Color(0xFF1A1A1A)
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (selected) RyderAccent else Color(0xFF9E9E9E)
+                            )
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Pievienot vairāk", tint = RyderRed)
+                            Text(option, fontSize = 13.sp)
                         }
                     }
                 }
             }
-
-            // Privacy settings
-            Text("Privātums", color = Color.Gray, fontSize = 13.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("Publisks", "Draugi", "Privāts").forEach { option ->
-                    val selected = visibility == option
-                    OutlinedButton(
-                        onClick = { visibility = option },
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (selected) RyderRed else Color.Transparent,
-                            contentColor = Color.White
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            if (selected) RyderRed else Color.Gray
-                        )
-                    ) {
-                        Text(option, fontSize = 13.sp)
-                    }
-                }
-            }
-
         }
     }
-    } // end Scaffold
 }
