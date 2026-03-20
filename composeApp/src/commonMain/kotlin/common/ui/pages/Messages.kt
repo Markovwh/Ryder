@@ -1,128 +1,341 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package common.ui.pages
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import coil.compose.rememberAsyncImagePainter
+import common.data.MessageRepository
+import common.model.Conversation
+import common.model.User
 import common.ui.pages.components.RyderRed
+import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 @Composable
-fun MessagesPage() {
+fun MessagesPage(
+    currentUser: User?,
+    onOpenChat: (Screen.Chat) -> Unit
+) {
+    val repo = remember { MessageRepository() }
+    var conversations by remember { mutableStateOf<List<Conversation>>(emptyList()) }
+    var showNewChat by remember { mutableStateOf(false) }
 
-    Column(
+    DisposableEffect(currentUser?.uid) {
+        val uid = currentUser?.uid
+        if (uid != null) {
+            val unsub = repo.listenToConversations(uid) { conversations = it }
+            onDispose { unsub() }
+        } else {
+            onDispose {}
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Text(
+                text = "Ziņas",
+                color = RyderRed,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(24.dp)
+            )
+            HorizontalDivider(color = Color(0xFF1E1E1E))
 
-        // Header
-        Text(
-            text = "Messages",
-            color = RyderRed,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(24.dp)
-        )
-
-        Divider(color = Color.DarkGray)
-
-        // Conversations list
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 80.dp)
-        ) {
-            items(dummyMessages()) { message ->
-                MessageRow(
-                    username = message.username,
-                    lastMessage = message.lastMessage,
-                    timestamp = message.time
-                )
+            if (conversations.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 80.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Nav sarunu. Sāc jaunu!",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    items(conversations, key = { it.id }) { conv ->
+                        val otherId = conv.participants.firstOrNull { it != currentUser?.uid } ?: ""
+                        val otherNickname = conv.participantNicknames[otherId] ?: "Lietotājs"
+                        val otherPicture = conv.participantPictures[otherId]?.takeIf { it.isNotEmpty() }
+                        ConversationRow(
+                            nickname = otherNickname,
+                            picture = otherPicture,
+                            lastMessage = conv.lastMessage,
+                            lastUpdated = conv.lastUpdated,
+                            onClick = {
+                                onOpenChat(
+                                    Screen.Chat(
+                                        conversationId = conv.id,
+                                        otherUserId = otherId,
+                                        otherUserNickname = otherNickname,
+                                        otherUserPicture = otherPicture
+                                    )
+                                )
+                            }
+                        )
+                    }
+                }
             }
         }
+
+        FloatingActionButton(
+            onClick = { showNewChat = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 24.dp, bottom = 96.dp),
+            containerColor = RyderRed
+        ) {
+            Icon(Icons.Default.Edit, contentDescription = "Jauna saruna", tint = Color.White)
+        }
+    }
+
+    if (showNewChat) {
+        NewChatDialog(
+            currentUser = currentUser,
+            repo = repo,
+            onDismiss = { showNewChat = false },
+            onOpenChat = { screen ->
+                showNewChat = false
+                onOpenChat(screen)
+            }
+        )
     }
 }
 
 @Composable
-private fun MessageRow(
-    username: String,
+private fun ConversationRow(
+    nickname: String,
+    picture: String?,
     lastMessage: String,
-    timestamp: String
+    lastUpdated: Long,
+    onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { }
+            .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
-        // Avatar placeholder
-        Surface(
-            modifier = Modifier.size(48.dp),
-            shape = CircleShape,
-            color = RyderRed
-        ) {}
+        if (picture != null) {
+            Image(
+                painter = rememberAsyncImagePainter(picture),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color.Gray),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = RyderRed) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = nickname.take(1).uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = username,
+                text = nickname,
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 15.sp
             )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = lastMessage,
+                text = lastMessage.ifEmpty { "..." },
                 color = Color.Gray,
                 fontSize = 13.sp,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
         Spacer(modifier = Modifier.width(8.dp))
 
         Text(
-            text = timestamp,
+            text = formatConvTime(lastUpdated),
             color = Color.Gray,
             fontSize = 11.sp
         )
     }
-
-    Divider(
+    HorizontalDivider(
         color = Color(0xFF1E1E1E),
         thickness = 0.5.dp,
         modifier = Modifier.padding(start = 84.dp)
     )
 }
 
-private data class MessagePreview(
-    val username: String,
-    val lastMessage: String,
-    val time: String
-)
+@Composable
+private fun NewChatDialog(
+    currentUser: User?,
+    repo: MessageRepository,
+    onDismiss: () -> Unit,
+    onOpenChat: (Screen.Chat) -> Unit
+) {
+    var query by remember { mutableStateOf("") }
+    var results by remember { mutableStateOf<List<User>>(emptyList()) }
+    val scope = rememberCoroutineScope()
 
-private fun dummyMessages(): List<MessagePreview> {
-    return listOf(
-        MessagePreview("IronRider", "You riding out tonight?", "2m"),
-        MessagePreview("NightWolf", "That build looks clean", "15m"),
-        MessagePreview("RoadQueen", "Meet at the gas station", "1h"),
-        MessagePreview("ThrottleKing", "Route’s ready, check it out", "3h"),
-        MessagePreview("MotoLife", "Weekend plans?", "Yesterday")
-    )
+    LaunchedEffect(query) {
+        val uid = currentUser?.uid ?: return@LaunchedEffect
+        results = if (query.length >= 2) {
+            try { repo.searchUsers(query, uid) } catch (_: Exception) { emptyList() }
+        } else {
+            emptyList()
+        }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0xFF1A1A1A))
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Jauna saruna",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = { Text("Meklēt lietotāju...", color = Color.Gray) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = RyderRed,
+                    unfocusedBorderColor = Color.Gray,
+                    cursorColor = RyderRed
+                ),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            if (results.isEmpty() && query.length >= 2) {
+                Text(
+                    text = "Nav atrasts neviens lietotājs",
+                    color = Color.Gray,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+            results.forEach { user ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val cu = currentUser ?: return@clickable
+                            scope.launch {
+                                try {
+                                    val convId = repo.getOrCreateConversation(cu, user)
+                                    onOpenChat(
+                                        Screen.Chat(
+                                            conversationId = convId,
+                                            otherUserId = user.uid,
+                                            otherUserNickname = user.nickname,
+                                            otherUserPicture = user.profilePicture
+                                        )
+                                    )
+                                } catch (_: Exception) {}
+                            }
+                        }
+                        .padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val pic = user.profilePicture
+                    if (pic != null) {
+                        Image(
+                            painter = rememberAsyncImagePainter(pic),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color.Gray),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = RyderRed) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = user.nickname.take(1).uppercase(),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(text = user.nickname, color = Color.White, fontSize = 15.sp)
+                }
+                HorizontalDivider(color = Color(0xFF2D2D2D))
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
+                Text("Atcelt", color = Color.Gray)
+            }
+        }
+    }
+}
+
+private fun formatConvTime(timeMillis: Long): String {
+    if (timeMillis == 0L) return ""
+    val diff = System.currentTimeMillis() - timeMillis
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
+    val hours = TimeUnit.MILLISECONDS.toHours(diff)
+    val days = TimeUnit.MILLISECONDS.toDays(diff)
+    return when {
+        minutes < 1 -> "Tikko"
+        minutes < 60 -> "${minutes}m"
+        hours < 24 -> "${hours}st"
+        else -> "${days}d"
+    }
 }
