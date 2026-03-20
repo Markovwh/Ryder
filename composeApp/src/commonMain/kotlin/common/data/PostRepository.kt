@@ -149,6 +149,15 @@ class PostRepository {
             .sortedByDescending { it.createdAt }
     }
 
+    // ── Delete ────────────────────────────────────────────────────────────────
+
+    suspend fun deletePost(postId: String) {
+        postsRef.document(postId).delete().await()
+        // Delete associated likes
+        val likes = likesRef.whereEqualTo("postId", postId).get().await()
+        likes.documents.forEach { it.reference.delete().await() }
+    }
+
     // ── Reports ───────────────────────────────────────────────────────────────
 
     suspend fun reportPost(postId: String, reporterId: String, reason: String) {

@@ -371,7 +371,15 @@ fun UserProfilePage(
 
     // ── Post detail ───────────────────────────────────────────────────────────
     selectedPost?.let { post ->
-        PostDetailDialog(post = post, currentUser = currentUser, onDismiss = { selectedPost = null })
+        PostDetailDialog(
+            post = post,
+            currentUser = currentUser,
+            onDismiss = { selectedPost = null },
+            onDeleted = {
+                posts = posts.filter { it.id != post.id }
+                selectedPost = null
+            }
+        )
     }
 
     // ── Block confirm dialog ──────────────────────────────────────────────────

@@ -270,7 +270,11 @@ fun ProfilePage(
         PostDetailDialog(
             post = post,
             currentUser = user,
-            onDismiss = { selectedPost = null }
+            onDismiss = { selectedPost = null },
+            onDeleted = {
+                posts = posts.filter { it.id != post.id }
+                selectedPost = null
+            }
         )
     }
 }

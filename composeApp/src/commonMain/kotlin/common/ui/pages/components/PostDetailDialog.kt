@@ -46,7 +46,8 @@ private val DialogDivider = Color(0xFF2D2D2D)
 fun PostDetailDialog(
     post: Post,
     currentUser: User?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onDeleted: (() -> Unit)? = null
 ) {
     val repository = remember { PostRepository() }
     var isLiked by remember { mutableStateOf(false) }
@@ -58,6 +59,8 @@ fun PostDetailDialog(
     var showReportDialog by remember { mutableStateOf(false) }
     var showShareOptions by remember { mutableStateOf(false) }
     var showShareToUser by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    val isOwner = currentUser?.uid == post.userId
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -126,10 +129,17 @@ fun PostDetailDialog(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("Ziņot") },
-                                onClick = { showMenu = false; showReportDialog = true }
-                            )
+                            if (isOwner) {
+                                DropdownMenuItem(
+                                    text = { Text("Dzēst", color = Color(0xFFFF4444)) },
+                                    onClick = { showMenu = false; showDeleteConfirm = true }
+                                )
+                            } else {
+                                DropdownMenuItem(
+                                    text = { Text("Ziņot") },
+                                    onClick = { showMenu = false; showReportDialog = true }
+                                )
+                            }
                         }
                     }
                     // Close button
@@ -476,6 +486,30 @@ fun PostDetailDialog(
             post = post,
             currentUser = currentUser,
             onDismiss = { showShareToUser = false }
+        )
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            containerColor = DialogBackground,
+            title = { Text("Dzēst ierakstu?", color = Color.White) },
+            text = { Text("Šo darbību nevar atsaukt.", color = Color.Gray) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    scope.launch {
+                        try {
+                            repository.deletePost(post.id)
+                            onDeleted?.invoke()
+                            onDismiss()
+                        } catch (_: Exception) {}
+                    }
+                }) { Text("Dzēst", color = Color(0xFFFF4444)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Atcelt", color = Color.Gray) }
+            }
         )
     }
 }
