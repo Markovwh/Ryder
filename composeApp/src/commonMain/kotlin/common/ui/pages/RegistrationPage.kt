@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.buildAnnotatedString
@@ -77,7 +78,8 @@ fun RegistrationPage(
 
         // EMAIL
         OutlinedTextField(
-            value = email,
+            shape = RoundedCornerShape(12.dp),
+            value =email,
             onValueChange = {
                 email = it
                 emailError = null
@@ -95,7 +97,8 @@ fun RegistrationPage(
 
         // NICKNAME
         OutlinedTextField(
-            value = nickname,
+            shape = RoundedCornerShape(12.dp),
+            value =nickname,
             onValueChange = {
                 nickname = it
                 nicknameError = null
@@ -112,7 +115,8 @@ fun RegistrationPage(
 
         // FIRST NAME
         OutlinedTextField(
-            value = firstName,
+            shape = RoundedCornerShape(12.dp),
+            value =firstName,
             onValueChange = {
                 firstName = it
                 firstNameError = null
@@ -129,7 +133,8 @@ fun RegistrationPage(
 
         // LAST NAME
         OutlinedTextField(
-            value = lastName,
+            shape = RoundedCornerShape(12.dp),
+            value =lastName,
             onValueChange = {
                 lastName = it
                 lastNameError = null
@@ -146,7 +151,8 @@ fun RegistrationPage(
 
         // PASSWORD
         OutlinedTextField(
-            value = password,
+            shape = RoundedCornerShape(12.dp),
+            value =password,
             onValueChange = {
                 password = it
                 passwordError = null
@@ -164,7 +170,8 @@ fun RegistrationPage(
 
         // CONFIRM PASSWORD
         OutlinedTextField(
-            value = confirmPassword,
+            shape = RoundedCornerShape(12.dp),
+            value =confirmPassword,
             onValueChange = {
                 confirmPassword = it
                 confirmPasswordError = null

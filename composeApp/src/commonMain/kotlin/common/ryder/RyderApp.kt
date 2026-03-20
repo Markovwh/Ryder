@@ -44,7 +44,10 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
 
     Scaffold(
         bottomBar = {
-            if (currentScreen !in listOf(Screen.Registration, Screen.Login, Screen.EditProfile)) {
+            if (currentScreen !in listOf(Screen.Registration, Screen.Login, Screen.EditProfile)
+                && currentScreen !is Screen.Chat
+                && currentScreen !is Screen.UserProfile
+                && currentScreen !is Screen.HashtagFeed) {
                 NavBar(
                     currentScreen = currentScreen,
                     onHome = { currentScreen = Screen.Home },
@@ -128,14 +131,59 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
             Screen.Home -> Homepage(
                 onLoginClick = { currentScreen = Screen.Login },
                 onRegisterClick = { currentScreen = Screen.Registration },
-                isUserLoggedIn = authService.getCurrentUserId() != null && !isGuest
+                isUserLoggedIn = authService.getCurrentUserId() != null && !isGuest,
+                currentUser = if (!isGuest) currentUser else null
             )
 
-            Screen.Search -> SearchPage()
+            Screen.Search -> SearchPage(
+                currentUser = currentUser,
+                onOpenUser = { userId, nickname ->
+                    currentScreen = Screen.UserProfile(userId, nickname)
+                },
+                onOpenHashtag = { hashtag ->
+                    currentScreen = Screen.HashtagFeed(hashtag)
+                }
+            )
+
+            is Screen.UserProfile -> {
+                val s = currentScreen as Screen.UserProfile
+                UserProfilePage(
+                    userId = s.userId,
+                    currentUser = currentUser,
+                    onBack = { currentScreen = Screen.Search },
+                    onOpenChat = { chatScreen -> currentScreen = chatScreen },
+                    onOpenUser = { uid, nickname -> currentScreen = Screen.UserProfile(uid, nickname) }
+                )
+            }
+
+            is Screen.HashtagFeed -> {
+                val s = currentScreen as Screen.HashtagFeed
+                HashtagFeedPage(
+                    hashtag = s.hashtag,
+                    currentUser = currentUser,
+                    onBack = { currentScreen = Screen.Search }
+                )
+            }
 
             Screen.Messages -> {
                 if (!isGuest && authService.getCurrentUserId() != null) {
-                    MessagesPage()
+                    MessagesPage(
+                        currentUser = currentUser,
+                        onOpenChat = { chatScreen -> currentScreen = chatScreen }
+                    )
+                } else {
+                    currentScreen = Screen.Login
+                }
+            }
+
+            is Screen.Chat -> {
+                val chatScreen = currentScreen as Screen.Chat
+                if (!isGuest && authService.getCurrentUserId() != null) {
+                    ChatScreen(
+                        chat = chatScreen,
+                        currentUser = currentUser,
+                        onBack = { currentScreen = Screen.Messages }
+                    )
                 } else {
                     currentScreen = Screen.Login
                 }
@@ -145,6 +193,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                 if (!isGuest && authService.getCurrentUserId() != null) {
                     ProfilePage(
                         authService = authService,
+                        initialUser = currentUser,
                         onLogout = {
                             scope.launch { userPreferences?.setRememberMe(false) }
                             authService.logout()
@@ -181,7 +230,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                 if (!isGuest && authService.getCurrentUserId() != null && user != null) {
                     CreatePostScreen(
                         currentUser = user,
-                        onPostCreated = { currentScreen = Screen.Profile },
+                        onPostCreated = { currentScreen = Screen .Profile },
                         onCancel = { currentScreen = Screen.Home }
                     )
                 } else {

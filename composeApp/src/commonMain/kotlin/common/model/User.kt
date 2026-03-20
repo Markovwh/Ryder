@@ -10,5 +10,7 @@ data class User(
     val profilePicture: String? = null,
     val bio: String = "",
     val bike: String = "",
-    val profilePrivacy: String = "Publisks" // Publisks / Privāts
+    val profilePrivacy: String = "Publisks", // Publisks / Privāts
+    val followerCount: Int = 0,
+    val followingCount: Int = 0
 )

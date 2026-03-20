@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import common.ui.pages.components.RyderRed
@@ -74,7 +75,8 @@ fun LoginPage(
 
         // Email field
         OutlinedTextField(
-            value = email,
+            shape = RoundedCornerShape(12.dp),
+            value =email,
             onValueChange = {
                 email = it
                 emailError = null
@@ -92,7 +94,8 @@ fun LoginPage(
 
         // Password field
         OutlinedTextField(
-            value = password,
+            shape = RoundedCornerShape(12.dp),
+            value =password,
             onValueChange = {
                 password = it
                 passwordError = null

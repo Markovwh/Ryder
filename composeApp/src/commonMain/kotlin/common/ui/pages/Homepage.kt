@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -13,11 +13,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import common.data.PostRepository
-import common.ui.pages.components.PostCard
-import ui.pages.components.NavBar
 import common.model.Post
 import common.model.User
-import androidx.compose.runtime.*
+import common.ui.pages.components.PostCard
 
 private val RyderRed = Color(0xFFD32F2F)
 
@@ -25,33 +23,27 @@ private val RyderRed = Color(0xFFD32F2F)
 fun Homepage(
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit,
-    isUserLoggedIn: Boolean
+    isUserLoggedIn: Boolean,
+    currentUser: User? = null
 ) {
-
     val repository = remember { PostRepository() }
     var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        repository.listenToPosts {
-            posts = it
-        }
+        repository.listenToPosts { posts = it }
     }
 
-    Scaffold(
-        containerColor = Color.Black
-    ) { paddingValues ->
-
+    Scaffold(containerColor = Color.Black) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-
-            // Top Bar
+            // Top bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -61,31 +53,27 @@ fun Homepage(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-
-                if (!isUserLoggedIn) {  // ← only show if not logged in
+                if (!isUserLoggedIn) {
                     TextButton(onClick = onLoginClick) {
-                        Text("Login", color = Color.White)
+                        Text("Pieslēgties", color = Color.White)
                     }
-
                     Spacer(modifier = Modifier.width(8.dp))
-
                     Button(
                         onClick = onRegisterClick,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = RyderRed
-                        )
+                        colors = ButtonDefaults.buttonColors(containerColor = RyderRed)
                     ) {
-                        Text("Sign Up")
+                        Text("Reģistrēties")
                     }
                 }
             }
 
             // Feed
             LazyColumn(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 items(posts) { post ->
-                    PostCard(post)
+                    PostCard(post = post, currentUser = currentUser)
                 }
             }
         }

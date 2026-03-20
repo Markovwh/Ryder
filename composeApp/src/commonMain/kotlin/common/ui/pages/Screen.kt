@@ -9,4 +9,12 @@ sealed class Screen {
     object Login : Screen()
     object CreatePost : Screen()
     object EditProfile : Screen()
+    data class UserProfile(val userId: String, val userNickname: String) : Screen()
+    data class HashtagFeed(val hashtag: String) : Screen()
+    data class Chat(
+        val conversationId: String,
+        val otherUserId: String,
+        val otherUserNickname: String,
+        val otherUserPicture: String?
+    ) : Screen()
 }
