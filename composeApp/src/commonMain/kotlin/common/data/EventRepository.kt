@@ -20,6 +20,9 @@ class EventRepository {
     suspend fun getEvents(): List<Event> =
         eventsRef.orderBy("dateTime").get().await().toObjects(Event::class.java)
 
+    suspend fun getEventsForUser(userId: String): List<Event> =
+        eventsRef.whereArrayContains("attendeeIds", userId).get().await().toObjects(Event::class.java)
+
     suspend fun getEvent(eventId: String): Event? =
         eventsRef.document(eventId).get().await().toObject(Event::class.java)
 

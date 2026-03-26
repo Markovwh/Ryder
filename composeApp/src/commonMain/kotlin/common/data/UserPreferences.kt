@@ -11,7 +11,9 @@ val Context.dataStore by preferencesDataStore("user_prefs")
 class UserPreferences(private val context: Context) {
 
     private val REMEMBER_ME = booleanPreferencesKey("remember_me")
-    private val DARK_THEME = booleanPreferencesKey("dark_theme")
+
+    private fun darkThemeKey(userId: String?) =
+        booleanPreferencesKey(if (userId.isNullOrEmpty()) "dark_theme" else "dark_theme_$userId")
 
     suspend fun setRememberMe(remember: Boolean) {
         context.dataStore.edit { prefs ->
@@ -24,14 +26,14 @@ class UserPreferences(private val context: Context) {
         return prefs[REMEMBER_ME] ?: false
     }
 
-    suspend fun setDarkTheme(dark: Boolean) {
+    suspend fun setDarkTheme(dark: Boolean, userId: String? = null) {
         context.dataStore.edit { prefs ->
-            prefs[DARK_THEME] = dark
+            prefs[darkThemeKey(userId)] = dark
         }
     }
 
-    suspend fun getDarkTheme(): Boolean {
+    suspend fun getDarkTheme(userId: String? = null): Boolean {
         val prefs = context.dataStore.data.first()
-        return prefs[DARK_THEME] ?: false
+        return prefs[darkThemeKey(userId)] ?: false
     }
 }

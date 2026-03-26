@@ -80,7 +80,7 @@ fun MessagesPage(
         val uid = currentUser?.uid ?: return@LaunchedEffect
         when (selectedTab) {
             1 -> groups = try { groupRepo.getGroupsForUser(uid) } catch (_: Exception) { emptyList() }
-            2 -> events = try { eventRepo.getEvents() } catch (_: Exception) { emptyList() }
+            2 -> events = try { eventRepo.getEventsForUser(uid) } catch (_: Exception) { emptyList() }
         }
     }
 

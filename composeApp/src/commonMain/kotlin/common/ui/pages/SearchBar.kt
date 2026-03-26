@@ -58,7 +58,8 @@ fun SearchPage(
     val repository = remember { PostRepository() }
     val groupRepo = remember { GroupRepository() }
     val eventRepo = remember { EventRepository() }
-    val recentStore = remember { RecentSearchesStore(context) }
+    // Keyed on uid so the store is re-created when the logged-in user changes
+    val recentStore = remember(currentUser?.uid) { RecentSearchesStore(context, currentUser?.uid ?: "") }
 
     val bg = AppColors.background
     val surface = AppColors.surface

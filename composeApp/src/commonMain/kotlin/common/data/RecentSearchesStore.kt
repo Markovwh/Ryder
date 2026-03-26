@@ -7,11 +7,14 @@ import common.model.User
 
 /**
  * Stores recent searches per category in SharedPreferences.
+ * Each user gets their own isolated prefs file keyed by [userId] so searches
+ * are never shared between accounts on the same device.
  * Fields separated by \u001F, records separated by \u001E.
  */
-class RecentSearchesStore(context: Context) {
+class RecentSearchesStore(context: Context, userId: String) {
 
-    private val prefs = context.getSharedPreferences("recent_searches", Context.MODE_PRIVATE)
+    private val safeId = userId.ifEmpty { "guest" }
+    private val prefs = context.getSharedPreferences("recent_searches_$safeId", Context.MODE_PRIVATE)
     private val max = 7
 
     // ── Users ─────────────────────────────────────────────────────────────────
