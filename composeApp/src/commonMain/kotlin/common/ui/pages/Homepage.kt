@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import common.data.PostRepository
 import common.model.Post
 import common.model.User
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.PostCard
 import common.ui.pages.components.RyderAccent
 
@@ -32,17 +33,16 @@ fun Homepage(
         repository.listenToPosts { posts = it }
     }
 
-    Scaffold(containerColor = Color(0xFFEEEEEE)) { paddingValues ->
+    Scaffold(containerColor = AppColors.background) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Top bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFF5F5F5))
+                    .background(AppColors.surface)
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -55,7 +55,7 @@ fun Homepage(
                 )
                 if (!isUserLoggedIn) {
                     TextButton(onClick = onLoginClick) {
-                        Text("Pieslēgties", color = Color(0xFF1A1A1A))
+                        Text("Pieslēgties", color = AppColors.textPrimary)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -67,7 +67,6 @@ fun Homepage(
                 }
             }
 
-            // Feed
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 16.dp)

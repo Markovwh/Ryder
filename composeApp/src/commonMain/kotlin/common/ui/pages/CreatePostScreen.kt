@@ -31,7 +31,9 @@ import coil.compose.rememberAsyncImagePainter
 import common.data.PostRepository
 import common.model.Post
 import common.model.User
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
+import common.ui.pages.components.UserAvatar
 import kotlinx.coroutines.launch
 
 @Composable
@@ -60,40 +62,47 @@ fun CreatePostScreen(
         ActivityResultContracts.PickMultipleVisualMedia()
     ) { uris -> selectedUris = selectedUris + uris }
 
+    val bg = AppColors.background
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val inputBorder = AppColors.inputBorder
+    val divider = AppColors.divider
+
     val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color(0xFF1A1A1A),
-        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedTextColor = textPrimary,
+        unfocusedTextColor = textPrimary,
         focusedBorderColor = RyderAccent,
-        unfocusedBorderColor = Color(0xFF9E9E9E),
+        unfocusedBorderColor = inputBorder,
         focusedLabelColor = RyderAccent,
-        unfocusedLabelColor = Color(0xFF757575),
+        unfocusedLabelColor = textSecondary,
         cursorColor = RyderAccent
     )
 
     Scaffold(
-        containerColor = Color(0xFFEEEEEE),
+        containerColor = bg,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFEEEEEE))
+                .background(bg)
                 .padding(innerPadding)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFF5F5F5))
+                    .background(surface)
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 IconButton(onClick = onCancel) {
-                    Icon(Icons.Default.Close, contentDescription = "Aizvērt", tint = Color(0xFF1A1A1A))
+                    Icon(Icons.Default.Close, contentDescription = "Aizvērt", tint = textPrimary)
                 }
                 Text(
                     text = "Jauna ziņa",
-                    color = Color(0xFF1A1A1A),
+                    color = textPrimary,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -136,7 +145,7 @@ fun CreatePostScreen(
                     if (isUploading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
-                            color = Color(0xFF1A1A1A),
+                            color = Color.White,
                             strokeWidth = 2.dp
                         )
                     } else {
@@ -145,7 +154,7 @@ fun CreatePostScreen(
                 }
             }
 
-            HorizontalDivider(color = Color(0xFFD9D9D9))
+            HorizontalDivider(color = divider)
 
             Column(
                 modifier = Modifier
@@ -155,21 +164,15 @@ fun CreatePostScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = rememberAsyncImagePainter(
-                            currentUser.profilePicture ?: "https://picsum.photos/200"
-                        ),
-                        contentDescription = "Profila bilde",
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFD0D0D0)),
-                        contentScale = ContentScale.Crop
+                    UserAvatar(
+                        profilePicture = currentUser.profilePicture,
+                        nickname = currentUser.nickname,
+                        size = 44.dp
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = currentUser.nickname,
-                        color = Color(0xFF1A1A1A),
+                        color = textPrimary,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp
                     )
@@ -179,7 +182,7 @@ fun CreatePostScreen(
                     shape = RoundedCornerShape(12.dp),
                     value = description,
                     onValueChange = { description = it },
-                    placeholder = { Text("Raksti ko notiek...", color = Color(0xFF9E9E9E)) },
+                    placeholder = { Text("Raksti ko notiek...", color = AppColors.textHint) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 100.dp),
@@ -187,14 +190,14 @@ fun CreatePostScreen(
                     maxLines = 8
                 )
 
-                Text("Foto / Video", color = Color(0xFF757575), fontSize = 13.sp)
+                Text("Foto / Video", color = textSecondary, fontSize = 13.sp)
 
                 if (selectedUris.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(180.dp)
-                            .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
+                            .background(surface, RoundedCornerShape(12.dp))
                             .clickable {
                                 mediaPickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
@@ -210,7 +213,7 @@ fun CreatePostScreen(
                                 modifier = Modifier.size(40.dp)
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Pievienot foto / video", color = Color(0xFF757575), fontSize = 14.sp)
+                            Text("Pievienot foto / video", color = textSecondary, fontSize = 14.sp)
                         }
                     }
                 } else {
@@ -223,7 +226,7 @@ fun CreatePostScreen(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFFD0D0D0)),
+                                        .background(AppColors.avatarPlaceholder),
                                     contentScale = ContentScale.Crop
                                 )
                                 IconButton(
@@ -231,7 +234,7 @@ fun CreatePostScreen(
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
                                         .size(28.dp)
-                                        .background(Color(0xFF1A1A1A).copy(alpha = 0.5f), CircleShape)
+                                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                                 ) {
                                     Icon(
                                         Icons.Default.Close,
@@ -246,7 +249,7 @@ fun CreatePostScreen(
                             Box(
                                 modifier = Modifier
                                     .size(120.dp)
-                                    .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                                    .background(surface, RoundedCornerShape(8.dp))
                                     .clickable {
                                         mediaPickerLauncher.launch(
                                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
@@ -260,7 +263,7 @@ fun CreatePostScreen(
                     }
                 }
 
-                Text("Privātums", color = Color(0xFF757575), fontSize = 13.sp)
+                Text("Privātums", color = textSecondary, fontSize = 13.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("Publisks", "Draugi", "Privāts").forEach { option ->
                         val selected = visibility == option
@@ -268,11 +271,11 @@ fun CreatePostScreen(
                             onClick = { visibility = option },
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = if (selected) RyderAccent else Color.Transparent,
-                                contentColor = Color(0xFF1A1A1A)
+                                contentColor = if (selected) Color.White else textPrimary
                             ),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (selected) RyderAccent else Color(0xFF9E9E9E)
+                                if (selected) RyderAccent else inputBorder
                             )
                         ) {
                             Text(option, fontSize = 13.sp)

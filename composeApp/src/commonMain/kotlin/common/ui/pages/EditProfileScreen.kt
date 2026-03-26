@@ -30,7 +30,9 @@ import coil.compose.rememberAsyncImagePainter
 import common.data.AuthService
 import common.data.PostRepository
 import common.model.User
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
+import common.ui.pages.components.UserAvatar
 import kotlinx.coroutines.launch
 
 @Composable
@@ -59,35 +61,42 @@ fun EditProfileScreen(
         ActivityResultContracts.PickVisualMedia()
     ) { uri -> if (uri != null) pickedUri = uri }
 
+    val bg = AppColors.background
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val inputBorder = AppColors.inputBorder
+    val divider = AppColors.divider
+
     val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color(0xFF1A1A1A),
-        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedTextColor = textPrimary,
+        unfocusedTextColor = textPrimary,
         focusedBorderColor = RyderAccent,
-        unfocusedBorderColor = Color(0xFF9E9E9E),
+        unfocusedBorderColor = inputBorder,
         focusedLabelColor = RyderAccent,
-        unfocusedLabelColor = Color(0xFF757575),
+        unfocusedLabelColor = textSecondary,
         cursorColor = RyderAccent
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFEEEEEE))
+            .background(bg)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFF5F5F5))
+                .background(surface)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(onClick = onCancel) {
-                Icon(Icons.Default.Close, contentDescription = "Atcelt", tint = Color(0xFF1A1A1A))
+                Icon(Icons.Default.Close, contentDescription = "Atcelt", tint = textPrimary)
             }
             Text(
                 text = "Rediģēt profilu",
-                color = Color(0xFF1A1A1A),
+                color = textPrimary,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -140,7 +149,7 @@ fun EditProfileScreen(
                 if (isSaving) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
-                        color = Color(0xFF1A1A1A),
+                        color = Color.White,
                         strokeWidth = 2.dp
                     )
                 } else {
@@ -149,7 +158,7 @@ fun EditProfileScreen(
             }
         }
 
-        HorizontalDivider(color = Color(0xFFD9D9D9))
+        HorizontalDivider(color = divider)
 
         Column(
             modifier = Modifier
@@ -160,23 +169,34 @@ fun EditProfileScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Box(contentAlignment = Alignment.BottomEnd) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        pickedUri ?: user.profilePicture ?: "https://picsum.photos/200"
-                    ),
-                    contentDescription = "Profila bilde",
+                Box(
                     modifier = Modifier
                         .size(100.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFD0D0D0))
                         .border(2.dp, RyderAccent, CircleShape)
                         .clickable {
                             imagePicker.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
-                        },
-                    contentScale = ContentScale.Crop
-                )
+                        }
+                ) {
+                    if (pickedUri != null) {
+                        Image(
+                            painter = rememberAsyncImagePainter(pickedUri),
+                            contentDescription = "Profila bilde",
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                                .background(AppColors.avatarPlaceholder),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        UserAvatar(
+                            profilePicture = user.profilePicture,
+                            nickname = user.nickname,
+                            size = 100.dp
+                        )
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .size(28.dp)
@@ -188,7 +208,7 @@ fun EditProfileScreen(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("✎", color = Color(0xFF1A1A1A), fontSize = 14.sp)
+                    Text("✎", color = Color.White, fontSize = 14.sp)
                 }
             }
 
@@ -240,7 +260,7 @@ fun EditProfileScreen(
                 value = bio,
                 onValueChange = { bio = it },
                 label = { Text("Par sevi") },
-                placeholder = { Text("Pastāsti par sevi...", color = Color(0xFF9E9E9E)) },
+                placeholder = { Text("Pastāsti par sevi...", color = AppColors.textHint) },
                 colors = textFieldColors,
                 maxLines = 4,
                 modifier = Modifier
@@ -277,7 +297,7 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Profila privātums", color = Color(0xFF757575), fontSize = 13.sp)
+                Text("Profila privātums", color = textSecondary, fontSize = 13.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("Publisks", "Privāts").forEach { option ->
                         val selected = profilePrivacy == option
@@ -285,11 +305,11 @@ fun EditProfileScreen(
                             onClick = { profilePrivacy = option },
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = if (selected) RyderAccent else Color.Transparent,
-                                contentColor = Color(0xFF1A1A1A)
+                                contentColor = if (selected) Color.White else textPrimary
                             ),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (selected) RyderAccent else Color(0xFF9E9E9E)
+                                if (selected) RyderAccent else inputBorder
                             )
                         ) {
                             Text(option)

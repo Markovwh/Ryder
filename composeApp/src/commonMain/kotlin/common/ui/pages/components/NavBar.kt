@@ -14,10 +14,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import common.ui.pages.Screen
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
 
 @Composable
@@ -29,7 +31,7 @@ fun NavBar(
     onMessages: () -> Unit,
     onProfile: () -> Unit
 ) {
-    BottomAppBar(containerColor = Color(0xFFF5F5F5)) {
+    BottomAppBar(containerColor = AppColors.surface) {
 
         NavItem(
             selected = currentScreen == Screen.Home,
@@ -64,12 +66,13 @@ private fun RowScope.AddPostButton(onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .weight(1f)
-            .padding(vertical = 8.dp),
+            .fillMaxHeight(),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .size(52.dp)
+                .size(48.dp)
+                .clip(CircleShape)
                 .background(RyderAccent, CircleShape)
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
@@ -77,8 +80,8 @@ private fun RowScope.AddPostButton(onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Jauna ziņa",
-                tint = Color(0xFF1A1A1A),
-                modifier = Modifier.size(28.dp)
+                tint = Color.White,
+                modifier = Modifier.size(26.dp)
             )
         }
     }
@@ -90,36 +93,37 @@ private fun RowScope.NavItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit
 ) {
-    val backgroundColor by animateColorAsState(
+    val circleColor by animateColorAsState(
         targetValue = if (selected) RyderAccent else Color.Transparent,
         animationSpec = spring(),
-        label = ""
+        label = "navCircleColor"
     )
 
     val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.15f else 1f,
+        targetValue = if (selected) 1.1f else 1f,
         animationSpec = spring(dampingRatio = 0.5f),
-        label = ""
+        label = "navIconScale"
     )
 
     Box(
         modifier = Modifier
             .weight(1f)
-            .padding(vertical = 8.dp),
+            .fillMaxHeight(),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(42.dp)
                 .scale(iconScale)
-                .background(backgroundColor, CircleShape)
+                .clip(CircleShape)
+                .background(circleColor, CircleShape)
                 .clickable { onClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (selected) Color(0xFF1A1A1A) else Color(0xFF757575)
+                tint = if (selected) Color.White else AppColors.textSecondary
             )
         }
     }

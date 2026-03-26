@@ -33,7 +33,9 @@ import common.model.Conversation
 import common.model.Event
 import common.model.Group
 import common.model.User
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
+import common.ui.pages.components.UserAvatar
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -43,6 +45,7 @@ import java.util.concurrent.TimeUnit
 fun MessagesPage(
     currentUser: User?,
     onOpenChat: (Screen.Chat) -> Unit,
+    onOpenUser: (String) -> Unit,
     onOpenGroup: (String) -> Unit,
     onCreateGroup: () -> Unit,
     onOpenEvent: (String) -> Unit,
@@ -56,6 +59,12 @@ fun MessagesPage(
     var events by remember { mutableStateOf<List<Event>>(emptyList()) }
     var selectedTab by remember { mutableStateOf(0) }
     var showNewChat by remember { mutableStateOf(false) }
+
+    // Repair legacy conversations that are missing the `participants` array field
+    LaunchedEffect(currentUser?.uid) {
+        val uid = currentUser?.uid ?: return@LaunchedEffect
+        try { repo.repairConversationsForUser(uid) } catch (_: Exception) {}
+    }
 
     DisposableEffect(currentUser?.uid) {
         val uid = currentUser?.uid
@@ -75,7 +84,12 @@ fun MessagesPage(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFEEEEEE))) {
+    val bg = AppColors.background
+    val surface = AppColors.surface
+    val textSecondary = AppColors.textSecondary
+    val divColor = AppColors.divider
+
+    Box(modifier = Modifier.fillMaxSize().background(bg)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Text(
                 text = "Ziņas",
@@ -87,7 +101,7 @@ fun MessagesPage(
 
             TabRow(
                 selectedTabIndex = selectedTab,
-                containerColor = Color(0xFFF5F5F5),
+                containerColor = surface,
                 contentColor = RyderAccent,
                 divider = {}
             ) {
@@ -96,7 +110,7 @@ fun MessagesPage(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
                         selectedContentColor = RyderAccent,
-                        unselectedContentColor = Color(0xFF757575),
+                        unselectedContentColor = textSecondary,
                         text = {
                             Text(
                                 title,
@@ -108,7 +122,7 @@ fun MessagesPage(
                 }
             }
 
-            HorizontalDivider(color = Color(0xFFD9D9D9))
+            HorizontalDivider(color = divColor)
 
             when (selectedTab) {
                 0 -> {
@@ -117,7 +131,7 @@ fun MessagesPage(
                             modifier = Modifier.fillMaxSize().padding(bottom = 80.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("Nav sarunu. Sāc jaunu!", color = Color(0xFF757575), fontSize = 14.sp)
+                            Text("Nav sarunu. Sāc jaunu!", color = textSecondary, fontSize = 14.sp)
                         }
                     } else {
                         LazyColumn(
@@ -133,6 +147,7 @@ fun MessagesPage(
                                     picture = otherPicture,
                                     lastMessage = conv.lastMessage,
                                     lastUpdated = conv.lastUpdated,
+                                    onOpenProfile = { onOpenUser(otherId) },
                                     onClick = {
                                         onOpenChat(
                                             Screen.Chat(
@@ -156,9 +171,9 @@ fun MessagesPage(
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Nav grupu", color = Color(0xFF757575), fontSize = 14.sp)
+                                Text("Nav grupu", color = textSecondary, fontSize = 14.sp)
                                 Spacer(Modifier.height(8.dp))
-                                Text("Izveido vai pievienojies grupai!", color = Color(0xFF9E9E9E), fontSize = 12.sp)
+                                Text("Izveido vai pievienojies grupai!", color = AppColors.textHint, fontSize = 12.sp)
                             }
                         }
                     } else {
@@ -187,9 +202,9 @@ fun MessagesPage(
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Nav notikumu", color = Color(0xFF757575), fontSize = 14.sp)
+                                Text("Nav notikumu", color = textSecondary, fontSize = 14.sp)
                                 Spacer(Modifier.height(8.dp))
-                                Text("Izveido pirmo notikumu!", color = Color(0xFF9E9E9E), fontSize = 12.sp)
+                                Text("Izveido pirmo notikumu!", color = AppColors.textHint, fontSize = 12.sp)
                             }
                         }
                     } else {
@@ -201,7 +216,7 @@ fun MessagesPage(
                                 item {
                                     Text(
                                         "Gaidāmie",
-                                        color = Color(0xFF757575),
+                                        color = textSecondary,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -219,7 +234,7 @@ fun MessagesPage(
                                 item {
                                     Text(
                                         "Pagājušie",
-                                        color = Color(0xFF757575),
+                                        color = textSecondary,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -239,7 +254,6 @@ fun MessagesPage(
             }
         }
 
-        // Tab-aware FAB
         val fabIcon = when (selectedTab) {
             1 -> Icons.Default.GroupAdd
             2 -> Icons.Default.AddCircle
@@ -275,18 +289,17 @@ fun MessagesPage(
     }
 }
 
-// ── Group row ─────────────────────────────────────────────────────────────────
-
 @Composable
-private fun GroupRow(
-    group: Group,
-    currentUserId: String?,
-    onClick: () -> Unit
-) {
+private fun GroupRow(group: Group, currentUserId: String?, onClick: () -> Unit) {
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val divColor = AppColors.divider
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFF5F5F5))
+            .background(surface)
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -295,7 +308,7 @@ private fun GroupRow(
             Image(
                 painter = rememberAsyncImagePainter(group.pictureUrl),
                 contentDescription = null,
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
+                modifier = Modifier.size(48.dp).clip(CircleShape).background(AppColors.avatarPlaceholder),
                 contentScale = ContentScale.Crop
             )
         } else {
@@ -303,7 +316,7 @@ private fun GroupRow(
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         group.name.take(1).uppercase(),
-                        color = Color(0xFF1A1A1A),
+                        color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -312,10 +325,10 @@ private fun GroupRow(
         }
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(group.name, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text(group.name, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             Text(
                 "${group.memberIds.size} biedri",
-                color = Color(0xFF757575),
+                color = textSecondary,
                 fontSize = 13.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -330,49 +343,35 @@ private fun GroupRow(
             Text(it, color = RyderAccent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
     }
-    HorizontalDivider(
-        color = Color(0xFFD9D9D9),
-        thickness = 0.5.dp,
-        modifier = Modifier.padding(start = 84.dp)
-    )
+    HorizontalDivider(color = divColor, thickness = 0.5.dp, modifier = Modifier.padding(start = 84.dp))
 }
 
-// ── Event row ─────────────────────────────────────────────────────────────────
-
 @Composable
-private fun EventRow(
-    event: Event,
-    currentUserId: String?,
-    onClick: () -> Unit
-) {
+private fun EventRow(event: Event, currentUserId: String?, onClick: () -> Unit) {
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val divColor = AppColors.divider
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFF5F5F5))
+            .background(surface)
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(
-            modifier = Modifier.size(48.dp),
-            shape = CircleShape,
-            color = Color(0xFFEEEEEE)
-        ) {
+        Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = AppColors.tagBackground) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Default.Event,
-                    contentDescription = null,
-                    tint = RyderAccent,
-                    modifier = Modifier.size(24.dp)
-                )
+                Icon(Icons.Default.Event, contentDescription = null, tint = RyderAccent, modifier = Modifier.size(24.dp))
             }
         }
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(event.name, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text(event.name, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             Text(
                 "${formatEventDate(event.dateTime)} · ${event.place}",
-                color = Color(0xFF757575),
+                color = textSecondary,
                 fontSize = 13.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -393,14 +392,8 @@ private fun EventRow(
             }
         }
     }
-    HorizontalDivider(
-        color = Color(0xFFD9D9D9),
-        thickness = 0.5.dp,
-        modifier = Modifier.padding(start = 84.dp)
-    )
+    HorizontalDivider(color = divColor, thickness = 0.5.dp, modifier = Modifier.padding(start = 84.dp))
 }
-
-// ── Conversation row ──────────────────────────────────────────────────────────
 
 @Composable
 private fun ConversationRow(
@@ -408,66 +401,42 @@ private fun ConversationRow(
     picture: String?,
     lastMessage: String,
     lastUpdated: Long,
+    onOpenProfile: () -> Unit,
     onClick: () -> Unit
 ) {
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val divColor = AppColors.divider
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFF5F5F5))
+            .background(surface)
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (picture != null) {
-            Image(
-                painter = rememberAsyncImagePainter(picture),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFD0D0D0)),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = RyderAccent) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = nickname.take(1).uppercase(),
-                        color = Color(0xFF1A1A1A),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                }
-            }
+        Box(modifier = Modifier.clickable(onClick = onOpenProfile)) {
+            UserAvatar(profilePicture = picture, nickname = nickname, size = 48.dp)
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = nickname,
-                color = Color(0xFF1A1A1A),
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 15.sp
-            )
+            Text(text = nickname, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = lastMessage.ifEmpty { "..." },
-                color = Color(0xFF757575),
+                color = textSecondary,
                 fontSize = 13.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text = formatConvTime(lastUpdated), color = Color(0xFF757575), fontSize = 11.sp)
+        Text(text = formatConvTime(lastUpdated), color = textSecondary, fontSize = 11.sp)
     }
-    HorizontalDivider(
-        color = Color(0xFFD9D9D9),
-        thickness = 0.5.dp,
-        modifier = Modifier.padding(start = 84.dp)
-    )
+    HorizontalDivider(color = divColor, thickness = 0.5.dp, modifier = Modifier.padding(start = 84.dp))
 }
-
-// ── New chat dialog ───────────────────────────────────────────────────────────
 
 @Composable
 private fun NewChatDialog(
@@ -476,6 +445,12 @@ private fun NewChatDialog(
     onDismiss: () -> Unit,
     onOpenChat: (Screen.Chat) -> Unit
 ) {
+    val dialogBg = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val textHint = AppColors.textHint
+    val divColor = AppColors.divider
+
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<User>>(emptyList()) }
     val scope = rememberCoroutineScope()
@@ -495,27 +470,22 @@ private fun NewChatDialog(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFF5F5F5))
+                .background(dialogBg)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Jauna saruna",
-                color = Color(0xFF1A1A1A),
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
-            )
+            Text(text = "Jauna saruna", color = textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Meklēt lietotāju...", color = Color(0xFF9E9E9E)) },
+                placeholder = { Text("Meklēt lietotāju...", color = textHint) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color(0xFF1A1A1A),
-                    unfocusedTextColor = Color(0xFF1A1A1A),
+                    focusedTextColor = textPrimary,
+                    unfocusedTextColor = textPrimary,
                     focusedBorderColor = RyderAccent,
-                    unfocusedBorderColor = Color(0xFF9E9E9E),
+                    unfocusedBorderColor = AppColors.inputBorder,
                     cursorColor = RyderAccent
                 ),
                 singleLine = true
@@ -524,7 +494,7 @@ private fun NewChatDialog(
             if (results.isEmpty() && query.length >= 2) {
                 Text(
                     text = "Nav atrasts neviens lietotājs",
-                    color = Color(0xFF757575),
+                    color = textSecondary,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
@@ -559,7 +529,7 @@ private fun NewChatDialog(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFD0D0D0)),
+                                .background(AppColors.avatarPlaceholder),
                             contentScale = ContentScale.Crop
                         )
                     } else {
@@ -567,26 +537,24 @@ private fun NewChatDialog(
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = user.nickname.take(1).uppercase(),
-                                    color = Color(0xFF1A1A1A),
+                                    color = Color.White,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = user.nickname, color = Color(0xFF1A1A1A), fontSize = 15.sp)
+                    Text(text = user.nickname, color = textPrimary, fontSize = 15.sp)
                 }
-                HorizontalDivider(color = Color(0xFFD9D9D9))
+                HorizontalDivider(color = divColor)
             }
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                Text("Atcelt", color = Color(0xFF757575))
+                Text("Atcelt", color = textSecondary)
             }
         }
     }
 }
-
-// ── Formatters ────────────────────────────────────────────────────────────────
 
 private fun formatConvTime(timeMillis: Long): String {
     if (timeMillis == 0L) return ""

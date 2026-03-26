@@ -36,6 +36,7 @@ import common.data.RecentSearchesStore
 import common.model.Event
 import common.model.Group
 import common.model.User
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
 
 private enum class SearchTab(val title: String) {
@@ -59,17 +60,23 @@ fun SearchPage(
     val eventRepo = remember { EventRepository() }
     val recentStore = remember { RecentSearchesStore(context) }
 
+    val bg = AppColors.background
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val textHint = AppColors.textHint
+    val divColor = AppColors.divider
+    val tagBg = AppColors.tagBackground
+
     var query by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf(SearchTab.USERS) }
 
-    // Search results
     var userResults by remember { mutableStateOf<List<User>>(emptyList()) }
     var hashtagResults by remember { mutableStateOf<List<Pair<String, Int>>>(emptyList()) }
     var groupResults by remember { mutableStateOf<List<Group>>(emptyList()) }
     var eventResults by remember { mutableStateOf<List<Event>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
 
-    // Recent searches — reloaded whenever tab changes or after a removal
     var recentUsers by remember { mutableStateOf(recentStore.getRecentUsers()) }
     var recentHashtags by remember { mutableStateOf(recentStore.getRecentHashtags()) }
     var recentGroups by remember { mutableStateOf(recentStore.getRecentGroups()) }
@@ -86,10 +93,8 @@ fun SearchPage(
 
     LaunchedEffect(query, selectedTab) {
         if (query.length < 2) {
-            userResults = emptyList()
-            hashtagResults = emptyList()
-            groupResults = emptyList()
-            eventResults = emptyList()
+            userResults = emptyList(); hashtagResults = emptyList()
+            groupResults = emptyList(); eventResults = emptyList()
             return@LaunchedEffect
         }
         isLoading = true
@@ -109,7 +114,7 @@ fun SearchPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFEEEEEE))
+            .background(bg)
             .padding(top = 24.dp)
     ) {
         Text(
@@ -126,12 +131,12 @@ fun SearchPage(
             shape = RoundedCornerShape(24.dp),
             value = query,
             onValueChange = { query = it },
-            placeholder = { Text("Meklēt lietotājus, grupas, pasākumus...", color = Color(0xFF9E9E9E)) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF757575)) },
+            placeholder = { Text("Meklēt lietotājus, grupas, pasākumus...", color = textHint) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = textSecondary) },
             trailingIcon = {
                 if (query.isNotEmpty()) {
                     IconButton(onClick = { query = "" }) {
-                        Icon(Icons.Default.Close, contentDescription = "Notīrīt", tint = Color(0xFF757575))
+                        Icon(Icons.Default.Close, contentDescription = "Notīrīt", tint = textSecondary)
                     }
                 }
             },
@@ -140,10 +145,10 @@ fun SearchPage(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1A1A1A),
-                unfocusedTextColor = Color(0xFF1A1A1A),
+                focusedTextColor = textPrimary,
+                unfocusedTextColor = textPrimary,
                 focusedBorderColor = RyderAccent,
-                unfocusedBorderColor = Color(0xFF9E9E9E),
+                unfocusedBorderColor = AppColors.inputBorder,
                 cursorColor = RyderAccent
             )
         )
@@ -152,7 +157,7 @@ fun SearchPage(
 
         TabRow(
             selectedTabIndex = selectedTab.ordinal,
-            containerColor = Color(0xFFF5F5F5),
+            containerColor = surface,
             contentColor = RyderAccent
         ) {
             SearchTab.entries.forEach { tab ->
@@ -162,7 +167,7 @@ fun SearchPage(
                     text = {
                         Text(
                             text = tab.title,
-                            color = if (selectedTab == tab) RyderAccent else Color(0xFF757575)
+                            color = if (selectedTab == tab) RyderAccent else textSecondary
                         )
                     }
                 )
@@ -173,10 +178,7 @@ fun SearchPage(
 
         when {
             isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = RyderAccent, modifier = Modifier.size(24.dp))
                 }
             }
@@ -194,7 +196,7 @@ fun SearchPage(
                         modifier = Modifier.fillMaxSize().padding(bottom = 80.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Ievadi vismaz 2 rakstzīmes...", color = Color(0xFF757575), fontSize = 14.sp)
+                        Text("Ievadi vismaz 2 rakstzīmes...", color = textSecondary, fontSize = 14.sp)
                     }
                 } else {
                     LazyColumn(
@@ -204,7 +206,7 @@ fun SearchPage(
                         item {
                             Text(
                                 text = "Nesenie meklējumi",
-                                color = Color(0xFF757575),
+                                color = textSecondary,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -214,80 +216,44 @@ fun SearchPage(
                             SearchTab.USERS -> items(recentUsers, key = { "r_${it.uid}" }) { user ->
                                 RecentUserRow(
                                     user = user,
-                                    onClick = {
-                                        recentStore.addRecentUser(user)
-                                        reloadRecents()
-                                        onOpenUser(user.uid, user.nickname)
-                                    },
-                                    onRemove = {
-                                        recentStore.removeRecentUser(user.uid)
-                                        reloadRecents()
-                                    }
+                                    onClick = { recentStore.addRecentUser(user); reloadRecents(); onOpenUser(user.uid, user.nickname) },
+                                    onRemove = { recentStore.removeRecentUser(user.uid); reloadRecents() }
                                 )
-                                HorizontalDivider(color = Color(0xFFD9D9D9))
+                                HorizontalDivider(color = divColor)
                             }
                             SearchTab.HASHTAGS -> items(recentHashtags, key = { "r_${it.first}" }) { (tag, count) ->
                                 RecentHashtagRow(
-                                    tag = tag,
-                                    count = count,
-                                    onClick = {
-                                        recentStore.addRecentHashtag(tag, count)
-                                        reloadRecents()
-                                        onOpenHashtag(tag)
-                                    },
-                                    onRemove = {
-                                        recentStore.removeRecentHashtag(tag)
-                                        reloadRecents()
-                                    }
+                                    tag = tag, count = count,
+                                    onClick = { recentStore.addRecentHashtag(tag, count); reloadRecents(); onOpenHashtag(tag) },
+                                    onRemove = { recentStore.removeRecentHashtag(tag); reloadRecents() }
                                 )
-                                HorizontalDivider(color = Color(0xFFD9D9D9))
+                                HorizontalDivider(color = divColor)
                             }
                             SearchTab.GROUPS -> items(recentGroups, key = { "r_${it.id}" }) { group ->
                                 RecentGroupRow(
                                     group = group,
-                                    onClick = {
-                                        recentStore.addRecentGroup(group)
-                                        reloadRecents()
-                                        onOpenGroup(group.id)
-                                    },
-                                    onRemove = {
-                                        recentStore.removeRecentGroup(group.id)
-                                        reloadRecents()
-                                    }
+                                    onClick = { recentStore.addRecentGroup(group); reloadRecents(); onOpenGroup(group.id) },
+                                    onRemove = { recentStore.removeRecentGroup(group.id); reloadRecents() }
                                 )
-                                HorizontalDivider(color = Color(0xFFD9D9D9))
+                                HorizontalDivider(color = divColor)
                             }
                             SearchTab.EVENTS -> items(recentEvents, key = { "r_${it.id}" }) { event ->
                                 RecentEventRow(
                                     event = event,
-                                    onClick = {
-                                        recentStore.addRecentEvent(event)
-                                        reloadRecents()
-                                        onOpenEvent(event.id)
-                                    },
-                                    onRemove = {
-                                        recentStore.removeRecentEvent(event.id)
-                                        reloadRecents()
-                                    }
+                                    onClick = { recentStore.addRecentEvent(event); reloadRecents(); onOpenEvent(event.id) },
+                                    onRemove = { recentStore.removeRecentEvent(event.id); reloadRecents() }
                                 )
-                                HorizontalDivider(color = Color(0xFFD9D9D9))
+                                HorizontalDivider(color = divColor)
                             }
                         }
                     }
                 }
             }
 
-            selectedTab == SearchTab.USERS && userResults.isEmpty() ->
-                EmptyResult("Nav atrasts neviens lietotājs")
-
-            selectedTab == SearchTab.HASHTAGS && hashtagResults.isEmpty() ->
-                EmptyResult("Nav atrasts neviens tēmturs")
-
-            selectedTab == SearchTab.GROUPS && groupResults.isEmpty() ->
-                EmptyResult("Nav atrasta neviena grupa")
-
-            selectedTab == SearchTab.EVENTS && eventResults.isEmpty() ->
-                EmptyResult("Nav atrasts neviens pasākums")
+            selectedTab == SearchTab.USERS && userResults.isEmpty() -> EmptyResult("Nav atrasts neviens lietotājs")
+            selectedTab == SearchTab.HASHTAGS && hashtagResults.isEmpty() -> EmptyResult("Nav atrasts neviens tēmturs")
+            selectedTab == SearchTab.GROUPS && groupResults.isEmpty() -> EmptyResult("Nav atrasta neviena grupa")
+            selectedTab == SearchTab.EVENTS && eventResults.isEmpty() -> EmptyResult("Nav atrasts neviens pasākums")
 
             else -> {
                 LazyColumn(
@@ -297,35 +263,27 @@ fun SearchPage(
                     when (selectedTab) {
                         SearchTab.USERS -> items(userResults, key = { it.uid }) { user ->
                             UserSearchRow(user = user, onClick = {
-                                recentStore.addRecentUser(user)
-                                reloadRecents()
-                                onOpenUser(user.uid, user.nickname)
+                                recentStore.addRecentUser(user); reloadRecents(); onOpenUser(user.uid, user.nickname)
                             })
-                            HorizontalDivider(color = Color(0xFFD9D9D9))
+                            HorizontalDivider(color = divColor)
                         }
                         SearchTab.HASHTAGS -> items(hashtagResults, key = { it.first }) { (tag, count) ->
                             HashtagSearchRow(tag = tag, count = count, onClick = {
-                                recentStore.addRecentHashtag(tag, count)
-                                reloadRecents()
-                                onOpenHashtag(tag)
+                                recentStore.addRecentHashtag(tag, count); reloadRecents(); onOpenHashtag(tag)
                             })
-                            HorizontalDivider(color = Color(0xFFD9D9D9))
+                            HorizontalDivider(color = divColor)
                         }
                         SearchTab.GROUPS -> items(groupResults, key = { it.id }) { group ->
                             GroupSearchRow(group = group, onClick = {
-                                recentStore.addRecentGroup(group)
-                                reloadRecents()
-                                onOpenGroup(group.id)
+                                recentStore.addRecentGroup(group); reloadRecents(); onOpenGroup(group.id)
                             })
-                            HorizontalDivider(color = Color(0xFFD9D9D9))
+                            HorizontalDivider(color = divColor)
                         }
                         SearchTab.EVENTS -> items(eventResults, key = { it.id }) { event ->
                             EventSearchRow(event = event, onClick = {
-                                recentStore.addRecentEvent(event)
-                                reloadRecents()
-                                onOpenEvent(event.id)
+                                recentStore.addRecentEvent(event); reloadRecents(); onOpenEvent(event.id)
                             })
-                            HorizontalDivider(color = Color(0xFFD9D9D9))
+                            HorizontalDivider(color = divColor)
                         }
                     }
                 }
@@ -334,153 +292,137 @@ fun SearchPage(
     }
 }
 
-// ── Empty state ────────────────────────────────────────────────────────────────
-
 @Composable
 private fun EmptyResult(text: String) {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(bottom = 80.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text, color = Color(0xFF757575), fontSize = 14.sp)
+    Box(modifier = Modifier.fillMaxSize().padding(bottom = 80.dp), contentAlignment = Alignment.Center) {
+        Text(text, color = AppColors.textSecondary, fontSize = 14.sp)
     }
 }
 
-// ── Recent row wrappers ────────────────────────────────────────────────────────
-
 @Composable
 private fun RecentUserRow(user: User, onClick: () -> Unit, onRemove: () -> Unit) {
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.History, contentDescription = null, tint = Color(0xFF757575), modifier = Modifier.size(18.dp))
+        Icon(Icons.Default.History, contentDescription = null, tint = textSecondary, modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(10.dp))
         val pic = user.profilePicture
         if (pic != null) {
             Image(
                 painter = rememberAsyncImagePainter(pic),
                 contentDescription = null,
-                modifier = Modifier.size(38.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
+                modifier = Modifier.size(38.dp).clip(CircleShape).background(AppColors.avatarPlaceholder),
                 contentScale = ContentScale.Crop
             )
         } else {
             Surface(modifier = Modifier.size(38.dp), shape = CircleShape, color = RyderAccent) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(user.nickname.take(1).uppercase(), color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(user.nickname.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(user.nickname, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text(user.nickname, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
             val fullName = "${user.firstName} ${user.lastName}".trim()
-            if (fullName.isNotEmpty()) Text(fullName, color = Color(0xFF757575), fontSize = 12.sp)
+            if (fullName.isNotEmpty()) Text(fullName, color = textSecondary, fontSize = 12.sp)
         }
         IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Close, contentDescription = "Noņemt", tint = Color(0xFF757575), modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.Close, contentDescription = "Noņemt", tint = textSecondary, modifier = Modifier.size(16.dp))
         }
     }
 }
 
 @Composable
 private fun RecentHashtagRow(tag: String, count: Int, onClick: () -> Unit, onRemove: () -> Unit) {
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val tagBg = AppColors.tagBackground
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.History, contentDescription = null, tint = Color(0xFF757575), modifier = Modifier.size(18.dp))
+        Icon(Icons.Default.History, contentDescription = null, tint = textSecondary, modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(10.dp))
         Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFEEEEEE))
-                .border(1.dp, RyderAccent, CircleShape),
+            modifier = Modifier.size(38.dp).clip(CircleShape).background(tagBg).border(1.dp, RyderAccent, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text("#", color = RyderAccent, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text("#$tag", color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-            Text("$count ierakst${if (count == 1) "s" else "i"}", color = Color(0xFF757575), fontSize = 12.sp)
+            Text("#$tag", color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text("$count ierakst${if (count == 1) "s" else "i"}", color = textSecondary, fontSize = 12.sp)
         }
         IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Close, contentDescription = "Noņemt", tint = Color(0xFF757575), modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.Close, contentDescription = "Noņemt", tint = textSecondary, modifier = Modifier.size(16.dp))
         }
     }
 }
 
 @Composable
 private fun RecentGroupRow(group: Group, onClick: () -> Unit, onRemove: () -> Unit) {
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.History, contentDescription = null, tint = Color(0xFF757575), modifier = Modifier.size(18.dp))
+        Icon(Icons.Default.History, contentDescription = null, tint = textSecondary, modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(10.dp))
         Surface(modifier = Modifier.size(38.dp), shape = CircleShape, color = RyderAccent) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Group, contentDescription = null, tint = Color(0xFF1A1A1A), modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Group, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
             }
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(group.name, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-            Text("${group.memberIds.size} dalībnieki", color = Color(0xFF757575), fontSize = 12.sp)
+            Text(group.name, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text("${group.memberIds.size} dalībnieki", color = textSecondary, fontSize = 12.sp)
         }
         IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Close, contentDescription = "Noņemt", tint = Color(0xFF757575), modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.Close, contentDescription = "Noņemt", tint = textSecondary, modifier = Modifier.size(16.dp))
         }
     }
 }
 
 @Composable
 private fun RecentEventRow(event: Event, onClick: () -> Unit, onRemove: () -> Unit) {
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val tagBg = AppColors.tagBackground
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.History, contentDescription = null, tint = Color(0xFF757575), modifier = Modifier.size(18.dp))
+        Icon(Icons.Default.History, contentDescription = null, tint = textSecondary, modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(10.dp))
-        Surface(modifier = Modifier.size(38.dp), shape = CircleShape, color = Color(0xFFEEEEEE)) {
+        Surface(modifier = Modifier.size(38.dp), shape = CircleShape, color = tagBg) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(Icons.Default.Event, contentDescription = null, tint = RyderAccent, modifier = Modifier.size(20.dp))
             }
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(event.name, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-            if (event.place.isNotEmpty()) Text(event.place, color = Color(0xFF757575), fontSize = 12.sp)
+            Text(event.name, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            if (event.place.isNotEmpty()) Text(event.place, color = textSecondary, fontSize = 12.sp)
         }
         IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Close, contentDescription = "Noņemt", tint = Color(0xFF757575), modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.Close, contentDescription = "Noņemt", tint = textSecondary, modifier = Modifier.size(16.dp))
         }
     }
 }
 
-// ── Search result rows ─────────────────────────────────────────────────────────
-
 @Composable
 private fun UserSearchRow(user: User, onClick: () -> Unit) {
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val pic = user.profilePicture
@@ -488,24 +430,24 @@ private fun UserSearchRow(user: User, onClick: () -> Unit) {
             Image(
                 painter = rememberAsyncImagePainter(pic),
                 contentDescription = null,
-                modifier = Modifier.size(44.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
+                modifier = Modifier.size(44.dp).clip(CircleShape).background(AppColors.avatarPlaceholder),
                 contentScale = ContentScale.Crop
             )
         } else {
             Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = RyderAccent) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(user.nickname.take(1).uppercase(), color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(user.nickname.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 }
             }
         }
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(user.nickname, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text(user.nickname, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             if (user.firstName.isNotEmpty() || user.lastName.isNotEmpty()) {
-                Text("${user.firstName} ${user.lastName}".trim(), color = Color(0xFF757575), fontSize = 13.sp)
+                Text("${user.firstName} ${user.lastName}".trim(), color = textSecondary, fontSize = 13.sp)
             }
             if (user.bio.isNotEmpty()) {
-                Text(user.bio, color = Color(0xFF757575), fontSize = 12.sp, maxLines = 1)
+                Text(user.bio, color = textSecondary, fontSize = 12.sp, maxLines = 1)
             }
         }
     }
@@ -513,67 +455,66 @@ private fun UserSearchRow(user: User, onClick: () -> Unit) {
 
 @Composable
 private fun HashtagSearchRow(tag: String, count: Int, onClick: () -> Unit) {
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val tagBg = AppColors.tagBackground
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier.size(44.dp).clip(CircleShape).background(Color(0xFFEEEEEE)).border(1.dp, RyderAccent, CircleShape),
+            modifier = Modifier.size(44.dp).clip(CircleShape).background(tagBg).border(1.dp, RyderAccent, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text("#", color = RyderAccent, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         }
         Spacer(modifier = Modifier.width(14.dp))
         Column {
-            Text("#$tag", color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            Text("$count ierakst${if (count == 1) "s" else "i"}", color = Color(0xFF757575), fontSize = 13.sp)
+            Text("#$tag", color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text("$count ierakst${if (count == 1) "s" else "i"}", color = textSecondary, fontSize = 13.sp)
         }
     }
 }
 
 @Composable
 private fun GroupSearchRow(group: Group, onClick: () -> Unit) {
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = RyderAccent) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Group, contentDescription = null, tint = Color(0xFF1A1A1A))
+                Icon(Icons.Default.Group, contentDescription = null, tint = Color.White)
             }
         }
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(group.name, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            Text("${group.memberIds.size} dalībnieki", color = Color(0xFF757575), fontSize = 13.sp)
+            Text(group.name, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text("${group.memberIds.size} dalībnieki", color = textSecondary, fontSize = 13.sp)
         }
     }
 }
 
 @Composable
 private fun EventSearchRow(event: Event, onClick: () -> Unit) {
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val tagBg = AppColors.tagBackground
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = Color(0xFFEEEEEE)) {
+        Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = tagBg) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(Icons.Default.Event, contentDescription = null, tint = RyderAccent)
             }
         }
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(event.name, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            Text(event.place, color = Color(0xFF757575), fontSize = 13.sp)
+            Text(event.name, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text(event.place, color = textSecondary, fontSize = 13.sp)
         }
     }
 }

@@ -8,6 +8,8 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +20,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
@@ -29,21 +32,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
 import common.data.MessageRepository
 import common.model.Message
 import common.model.User
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.PostCardTimeFormatter
 import common.ui.pages.components.RyderAccent
+import common.ui.pages.components.UserAvatar
 import kotlinx.coroutines.launch
 
 @Composable
 fun ChatScreen(
     chat: Screen.Chat,
     currentUser: User?,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenUser: ((String) -> Unit)? = null
 ) {
     val repo = remember { MessageRepository() }
     var messages by remember { mutableStateOf<List<Message>>(emptyList()) }
@@ -55,15 +64,20 @@ fun ChatScreen(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
+    val bg = AppColors.background
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val inputBorder = AppColors.inputBorder
+    val textHint = AppColors.textHint
+
     val mediaPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia()
     ) { uris -> selectedUris = uris }
 
-    // Ensure the conversation document exists with full participant data.
-    // Also keyed on currentUser?.uid so it retries if currentUser loads after the screen opens.
     LaunchedEffect(chat.conversationId, currentUser?.uid) {
         val cu = currentUser ?: return@LaunchedEffect
-        val otherUser = common.model.User(
+        val otherUser = User(
             uid = chat.otherUserId,
             nickname = chat.otherUserNickname,
             profilePicture = chat.otherUserPicture
@@ -82,9 +96,9 @@ fun ChatScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFEEEEEE),
+        containerColor = bg,
         topBar = {
-            Surface(color = Color(0xFFF5F5F5), tonalElevation = 0.dp) {
+            Surface(color = surface, tonalElevation = 0.dp) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -93,41 +107,31 @@ fun ChatScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color(0xFF1A1A1A))
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = textPrimary)
                     }
-                    val pic = chat.otherUserPicture
-                    if (pic != null) {
-                        Image(
-                            painter = rememberAsyncImagePainter(pic),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFD0D0D0)),
-                            contentScale = ContentScale.Crop
+                    val headerClickModifier = if (onOpenUser != null)
+                        Modifier.weight(1f).clickable { onOpenUser(chat.otherUserId) }
+                    else Modifier.weight(1f)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = headerClickModifier
+                    ) {
+                        UserAvatar(
+                            profilePicture = chat.otherUserPicture,
+                            nickname = chat.otherUserNickname,
+                            size = 36.dp
                         )
-                    } else {
-                        Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = RyderAccent) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = chat.otherUserNickname.take(1).uppercase(),
-                                    color = Color(0xFF1A1A1A),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = chat.otherUserNickname,
+                            color = textPrimary,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp
+                        )
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = chat.otherUserNickname,
-                        color = Color(0xFF1A1A1A),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp,
-                        modifier = Modifier.weight(1f)
-                    )
                     Box {
                         IconButton(onClick = { showTopMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color(0xFF757575))
+                            Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = textSecondary)
                         }
                         DropdownMenu(
                             expanded = showTopMenu,
@@ -143,7 +147,7 @@ fun ChatScreen(
             }
         },
         bottomBar = {
-            Surface(color = Color(0xFFF5F5F5)) {
+            Surface(color = surface) {
                 Column(
                     modifier = Modifier
                         .navigationBarsPadding()
@@ -163,7 +167,7 @@ fun ChatScreen(
                                     modifier = Modifier
                                         .size(56.dp)
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFFD0D0D0)),
+                                        .background(AppColors.avatarPlaceholder),
                                     contentScale = ContentScale.Crop
                                 )
                             }
@@ -172,10 +176,10 @@ fun ChatScreen(
                                     modifier = Modifier
                                         .size(56.dp)
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFFEEEEEE)),
+                                        .background(bg),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("+${selectedUris.size - 4}", color = Color(0xFF1A1A1A), fontSize = 14.sp)
+                                    Text("+${selectedUris.size - 4}", color = textPrimary, fontSize = 14.sp)
                                 }
                             }
                         }
@@ -191,19 +195,19 @@ fun ChatScreen(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
                             )
                         }) {
-                            Icon(Icons.Default.Image, contentDescription = "Pievienot mediju", tint = Color(0xFF757575))
+                            Icon(Icons.Default.Image, contentDescription = "Pievienot mediju", tint = textSecondary)
                         }
                         OutlinedTextField(
                             value = inputText,
                             onValueChange = { inputText = it },
-                            placeholder = { Text("Raksti ziņu...", color = Color(0xFF9E9E9E)) },
+                            placeholder = { Text("Raksti ziņu...", color = textHint) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(24.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color(0xFF1A1A1A),
-                                unfocusedTextColor = Color(0xFF1A1A1A),
+                                focusedTextColor = textPrimary,
+                                unfocusedTextColor = textPrimary,
                                 focusedBorderColor = RyderAccent,
-                                unfocusedBorderColor = Color(0xFF9E9E9E),
+                                unfocusedBorderColor = inputBorder,
                                 cursorColor = RyderAccent
                             ),
                             singleLine = true
@@ -239,7 +243,7 @@ fun ChatScreen(
                             Icon(
                                 Icons.Default.Send,
                                 contentDescription = "Sūtīt",
-                                tint = if (isSending) Color(0xFF9E9E9E) else RyderAccent
+                                tint = if (isSending) textSecondary else RyderAccent
                             )
                         }
                     }
@@ -260,6 +264,7 @@ fun ChatScreen(
                 MessageBubble(
                     message = message,
                     isMine = isMine,
+                    onOpenUser = onOpenUser,
                     onDelete = if (isMine) {
                         {
                             scope.launch {
@@ -275,13 +280,14 @@ fun ChatScreen(
         }
     }
 
-    // Delete entire conversation dialog
     if (showDeleteConversationConfirm) {
+        val dialogSurface = AppColors.surface
+        val dialogTextPrimary = AppColors.textPrimary
         AlertDialog(
             onDismissRequest = { showDeleteConversationConfirm = false },
-            containerColor = Color(0xFFF5F5F5),
-            title = { Text("Dzēst sarunu?", color = Color(0xFF1A1A1A)) },
-            text = { Text("Visa saruna un ziņas tiks neatgriezeniski dzēstas.", color = Color(0xFF757575)) },
+            containerColor = dialogSurface,
+            title = { Text("Dzēst sarunu?", color = dialogTextPrimary) },
+            text = { Text("Visa saruna un ziņas tiks neatgriezeniski dzēstas.", color = AppColors.textSecondary) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConversationConfirm = false
@@ -292,15 +298,26 @@ fun ChatScreen(
                 }) { Text("Dzēst", color = Color(0xFFE53935)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConversationConfirm = false }) { Text("Atcelt", color = Color(0xFF757575)) }
+                TextButton(onClick = { showDeleteConversationConfirm = false }) {
+                    Text("Atcelt", color = AppColors.textSecondary)
+                }
             }
         )
     }
 }
 
+// ── Message bubble ─────────────────────────────────────────────────────────────
+
 @Composable
-private fun MessageBubble(message: Message, isMine: Boolean, onDelete: (() -> Unit)? = null) {
-    val bubbleColor = if (isMine) RyderAccent else Color(0xFFE0E0E0)
+private fun MessageBubble(
+    message: Message,
+    isMine: Boolean,
+    onDelete: (() -> Unit)? = null,
+    onOpenUser: ((String) -> Unit)? = null
+) {
+    val bubbleColor = if (isMine) RyderAccent else AppColors.tileBackground
+    val textColor = if (isMine) Color.White else AppColors.textPrimary
+    val subTextColor = if (isMine) Color.White.copy(alpha = 0.75f) else AppColors.textSecondary
     val alignment = if (isMine) Alignment.End else Alignment.Start
     val shape = if (isMine) {
         RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 4.dp)
@@ -308,6 +325,7 @@ private fun MessageBubble(message: Message, isMine: Boolean, onDelete: (() -> Un
         RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
     }
     var showMenu by remember { mutableStateOf(false) }
+    var showSharedPostDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -326,10 +344,14 @@ private fun MessageBubble(message: Message, isMine: Boolean, onDelete: (() -> Un
                     .padding(10.dp)
             ) {
                 if (message.hasSharedPost) {
-                    SharedPostPreview(
+                    SharedPostCard(
                         nickname = message.sharedPostUserNickname,
+                        userId = message.sharedPostUserId,
+                        userPicture = message.sharedPostUserPicture.takeIf { it.isNotEmpty() },
                         description = message.sharedPostDescription,
-                        mediaUrl = message.sharedPostMediaUrl.takeIf { it.isNotEmpty() }
+                        mediaUrl = message.sharedPostMediaUrl.takeIf { it.isNotEmpty() },
+                        isMine = isMine,
+                        onClick = { showSharedPostDialog = true }
                     )
                     if (message.text.isNotEmpty()) Spacer(modifier = Modifier.height(6.dp))
                 }
@@ -342,14 +364,14 @@ private fun MessageBubble(message: Message, isMine: Boolean, onDelete: (() -> Un
                                 .fillMaxWidth()
                                 .heightIn(max = 200.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFD0D0D0)),
+                                .background(AppColors.avatarPlaceholder),
                             contentScale = ContentScale.Crop
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                     }
                 }
                 if (message.text.isNotEmpty()) {
-                    Text(text = message.text, color = Color(0xFF1A1A1A), fontSize = 14.sp)
+                    Text(text = message.text, color = textColor, fontSize = 14.sp)
                 }
             }
             if (onDelete != null) {
@@ -359,10 +381,7 @@ private fun MessageBubble(message: Message, isMine: Boolean, onDelete: (() -> Un
                 ) {
                     DropdownMenuItem(
                         text = { Text("Dzēst", color = Color(0xFFE53935)) },
-                        onClick = {
-                            showMenu = false
-                            onDelete()
-                        }
+                        onClick = { showMenu = false; onDelete() }
                     )
                 }
             }
@@ -370,54 +389,198 @@ private fun MessageBubble(message: Message, isMine: Boolean, onDelete: (() -> Un
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = PostCardTimeFormatter.formatTimeAgo(message.createdAt),
-            color = Color(0xFF757575),
+            color = AppColors.textSecondary,
             fontSize = 10.sp,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
         Spacer(modifier = Modifier.height(6.dp))
     }
+
+    if (showSharedPostDialog) {
+        SharedPostDetailDialog(
+            nickname = message.sharedPostUserNickname,
+            userId = message.sharedPostUserId,
+            userPicture = message.sharedPostUserPicture.takeIf { it.isNotEmpty() },
+            description = message.sharedPostDescription,
+            mediaUrl = message.sharedPostMediaUrl.takeIf { it.isNotEmpty() },
+            onDismiss = { showSharedPostDialog = false },
+            onOpenUser = if (message.sharedPostUserId.isNotEmpty() && onOpenUser != null) {
+                {
+                    showSharedPostDialog = false
+                    onOpenUser(message.sharedPostUserId)
+                }
+            } else null
+        )
+    }
 }
 
+// ── Shared post card (inside bubble) ──────────────────────────────────────────
+
 @Composable
-private fun SharedPostPreview(
+private fun SharedPostCard(
     nickname: String,
+    userId: String,
+    userPicture: String?,
     description: String,
-    mediaUrl: String?
+    mediaUrl: String?,
+    isMine: Boolean,
+    onClick: () -> Unit
 ) {
+    val overlayBg = if (isMine)
+        Color.White.copy(alpha = 0.15f)
+    else
+        Color.Black.copy(alpha = 0.06f)
+    val textColor = if (isMine) Color.White else AppColors.textPrimary
+    val subTextColor = if (isMine) Color.White.copy(alpha = 0.8f) else AppColors.textSecondary
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF000000).copy(alpha = 0.08f))
-            .padding(8.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(overlayBg)
+            .clickable(onClick = onClick)
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text(
-            text = "📸 $nickname",
-            color = Color(0xFF1A1A1A),
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 12.sp
-        )
+        // Top: avatar + nickname
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            UserAvatar(
+                profilePicture = userPicture,
+                nickname = nickname,
+                size = 22.dp
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = nickname,
+                color = textColor,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        // Middle: image
         if (mediaUrl != null) {
-            Spacer(modifier = Modifier.height(4.dp))
             Image(
                 painter = rememberAsyncImagePainter(mediaUrl),
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .height(130.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFFD0D0D0)),
+                    .background(AppColors.avatarPlaceholder),
                 contentScale = ContentScale.Crop
             )
         }
+        // Bottom: description
         if (description.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = if (description.length > 80) description.take(80) + "..." else description,
-                color = Color(0xFF757575),
-                fontSize = 12.sp,
-                maxLines = 2
+                text = if (description.length > 100) description.take(100) + "…" else description,
+                color = subTextColor,
+                fontSize = 11.sp,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
             )
+        }
+    }
+}
+
+// ── Shared post detail dialog ──────────────────────────────────────────────────
+
+@Composable
+private fun SharedPostDetailDialog(
+    nickname: String,
+    userId: String,
+    userPicture: String?,
+    description: String,
+    mediaUrl: String?,
+    onDismiss: () -> Unit,
+    onOpenUser: (() -> Unit)?
+) {
+    val surface = AppColors.surface
+    val divider = AppColors.divider
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .clip(RoundedCornerShape(16.dp))
+                .background(surface)
+                .border(1.5.dp, RyderAccent, RoundedCornerShape(16.dp))
+        ) {
+            // Header: avatar + nickname (clickable) + close button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val authorModifier = if (onOpenUser != null)
+                    Modifier.weight(1f).clickable(onClick = onOpenUser)
+                else Modifier.weight(1f)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = authorModifier
+                ) {
+                    UserAvatar(profilePicture = userPicture, nickname = nickname, size = 40.dp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = nickname,
+                            color = textPrimary,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                        if (onOpenUser != null) {
+                            Text(
+                                text = "Skatīt profilu →",
+                                color = RyderAccent,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "Aizvērt", tint = textPrimary)
+                }
+            }
+
+            HorizontalDivider(color = divider)
+
+            // Media
+            if (mediaUrl != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(mediaUrl),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 160.dp, max = 320.dp)
+                        .background(AppColors.avatarPlaceholder),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            // Description
+            if (description.isNotEmpty()) {
+                Text(
+                    text = description,
+                    color = textPrimary,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+                )
+            } else if (mediaUrl == null) {
+                Text(
+                    text = "Šajā ierakstā nav satura.",
+                    color = textSecondary,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(14.dp)
+                )
+            }
         }
     }
 }

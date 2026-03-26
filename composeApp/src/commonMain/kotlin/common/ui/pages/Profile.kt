@@ -4,6 +4,7 @@ package common.ui.pages
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,7 +12,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,71 +31,64 @@ import common.data.AuthService
 import common.data.PostRepository
 import common.model.Post
 import common.model.User
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.PostDetailDialog
 import common.ui.pages.components.RyderAccent
-
-private val TileBackground = Color(0xFFF0F0F0)
+import common.ui.pages.components.UserAvatar
 
 @Composable
 fun ProfilePage(
     authService: AuthService,
     initialUser: User? = null,
-    onLogout: () -> Unit,
     onEditProfile: () -> Unit,
-    onOpenAdmin: (() -> Unit)? = null
+    onOpenSettings: () -> Unit,
+    onOpenAdmin: (() -> Unit)? = null,
+    onUserRefreshed: ((User) -> Unit)? = null
 ) {
+    val bg = AppColors.background
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val dividerColor = AppColors.divider
+    val tileBg = AppColors.tileBackground
+
     var user by remember { mutableStateOf(initialUser) }
     var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
     var isLoadingPosts by remember { mutableStateOf(true) }
-    var showMenu by remember { mutableStateOf(false) }
     var selectedPost by remember { mutableStateOf<Post?>(null) }
     val repository = remember { PostRepository() }
 
     LaunchedEffect(initialUser?.uid) {
         val uid = initialUser?.uid ?: authService.getCurrentUserId() ?: return@LaunchedEffect
-        if (initialUser == null) {
-            val result = authService.getUserData(uid)
-            if (result.isSuccess) user = result.getOrNull()
+        val result = authService.getUserData(uid)
+        if (result.isSuccess) {
+            val fresh = result.getOrNull()
+            if (fresh != null) {
+                user = fresh
+                onUserRefreshed?.invoke(fresh)
+            }
         }
         isLoadingPosts = true
         try { posts = repository.getPostsByUser(uid) } catch (_: Exception) {}
         isLoadingPosts = false
     }
 
-    LaunchedEffect(initialUser) {
-        if (initialUser != null) user = initialUser
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFEEEEEE))
-    ) {
+    Column(modifier = Modifier.fillMaxSize().background(bg)) {
         TopAppBar(
-            title = { Text(user?.nickname ?: "Profils", color = Color(0xFF1A1A1A)) },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF5F5F5)),
+            title = { Text(user?.nickname ?: "Profils", color = textPrimary) },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = surface),
             actions = {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Iestatījumi", tint = Color(0xFF1A1A1A))
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Rediģēt profilu") },
-                        onClick = { showMenu = false; onEditProfile() }
-                    )
-                    if (user?.isAdmin == true && onOpenAdmin != null) {
-                        DropdownMenuItem(
-                            text = { Text("Administratora panelis") },
-                            onClick = { showMenu = false; onOpenAdmin() }
+                if (user?.isAdmin == true && onOpenAdmin != null) {
+                    IconButton(onClick = onOpenAdmin) {
+                        Icon(
+                            Icons.Default.AdminPanelSettings,
+                            contentDescription = "Administratora panelis",
+                            tint = RyderAccent
                         )
                     }
-                    DropdownMenuItem(
-                        text = { Text("Iziet") },
-                        onClick = { showMenu = false; authService.logout(); onLogout() }
-                    )
+                }
+                IconButton(onClick = onOpenSettings) {
+                    Icon(Icons.Default.Settings, contentDescription = "Iestatījumi", tint = textPrimary)
                 }
             }
         )
@@ -101,32 +96,26 @@ fun ProfilePage(
         val postRows = posts.chunked(3)
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize().background(Color(0xFFEEEEEE)),
+            modifier = Modifier.fillMaxSize().background(bg),
             horizontalAlignment = Alignment.CenterHorizontally,
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             item {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth().background(Color(0xFFF5F5F5)).padding(top = 16.dp)
+                    modifier = Modifier.fillMaxWidth().background(surface).padding(top = 16.dp)
                 ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(
-                            user?.profilePicture ?: "https://picsum.photos/200"
-                        ),
-                        contentDescription = "Profila bilde",
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFD0D0D0)),
-                        contentScale = ContentScale.Crop
+                    UserAvatar(
+                        profilePicture = user?.profilePicture,
+                        nickname = user?.nickname ?: "",
+                        size = 100.dp
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
                         text = user?.nickname ?: "Lietotājvārds",
-                        color = Color(0xFF1A1A1A),
+                        color = textPrimary,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -134,13 +123,13 @@ fun ProfilePage(
                     val fullName = "${user?.firstName ?: ""} ${user?.lastName ?: ""}".trim()
                     if (fullName.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = fullName, color = Color(0xFF757575), fontSize = 15.sp)
+                        Text(text = fullName, color = textSecondary, fontSize = 15.sp)
                     }
 
                     val bike = user?.bike.orEmpty()
                     if (bike.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = "🏍 $bike", color = Color(0xFF555555), fontSize = 14.sp)
+                        Text(text = "🏍 $bike", color = textSecondary, fontSize = 14.sp)
                     }
 
                     val exp = user?.experienceYears ?: 0
@@ -148,7 +137,7 @@ fun ProfilePage(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "⏱ $exp ${if (exp == 1) "gads" else "gadi"} pieredze",
-                            color = Color(0xFF555555),
+                            color = textSecondary,
                             fontSize = 14.sp
                         )
                     }
@@ -158,7 +147,7 @@ fun ProfilePage(
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = bio,
-                            color = Color(0xFF1A1A1A),
+                            color = textPrimary,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center,
                             modifier = Modifier
@@ -172,17 +161,17 @@ fun ProfilePage(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = privacy,
-                            color = Color(0xFF757575),
+                            color = textSecondary,
                             fontSize = 11.sp,
                             modifier = Modifier
-                                .background(Color(0xFFEEEEEE), RoundedCornerShape(4.dp))
+                                .background(AppColors.tagBackground, RoundedCornerShape(4.dp))
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    HorizontalDivider(color = Color(0xFFD9D9D9))
+                    HorizontalDivider(color = dividerColor)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -202,7 +191,7 @@ fun ProfilePage(
                             label = "Seko"
                         )
                     }
-                    HorizontalDivider(color = Color(0xFFD9D9D9))
+                    HorizontalDivider(color = dividerColor)
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -213,11 +202,7 @@ fun ProfilePage(
                             .fillMaxWidth(0.6f)
                             .height(40.dp)
                     ) {
-                        Text(
-                            text = "Rediģēt profilu",
-                            color = Color(0xFF1A1A1A),
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text(text = "Rediģēt profilu", color = Color.White, fontWeight = FontWeight.Bold)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -226,16 +211,13 @@ fun ProfilePage(
 
             if (isLoadingPosts) {
                 item {
-                    CircularProgressIndicator(
-                        color = RyderAccent,
-                        modifier = Modifier.padding(32.dp)
-                    )
+                    CircularProgressIndicator(color = RyderAccent, modifier = Modifier.padding(32.dp))
                 }
             } else if (posts.isEmpty()) {
                 item {
                     Text(
                         text = "Vēl nav nevienas ziņas",
-                        color = Color(0xFF757575),
+                        color = textSecondary,
                         modifier = Modifier.padding(32.dp)
                     )
                 }
@@ -250,6 +232,7 @@ fun ProfilePage(
                         rowPosts.forEach { post ->
                             PostGridTile(
                                 post = post,
+                                tileBg = tileBg,
                                 modifier = Modifier
                                     .weight(1f)
                                     .aspectRatio(1f),
@@ -279,8 +262,13 @@ fun ProfilePage(
 }
 
 @Composable
-private fun PostGridTile(post: Post, modifier: Modifier, onClick: () -> Unit = {}) {
-    Box(modifier = modifier.background(Color(0xFFD0D0D0)).clickable(onClick = onClick)) {
+private fun PostGridTile(post: Post, tileBg: Color, modifier: Modifier, onClick: () -> Unit = {}) {
+    Box(
+        modifier = modifier
+            .background(tileBg)
+            .border(1.dp, Color.White)
+            .clickable(onClick = onClick)
+    ) {
         if (post.mediaUrls.isNotEmpty()) {
             Image(
                 painter = rememberAsyncImagePainter(post.mediaUrls.first()),
@@ -290,14 +278,12 @@ private fun PostGridTile(post: Post, modifier: Modifier, onClick: () -> Unit = {
             )
         } else {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(TileBackground),
+                modifier = Modifier.fillMaxSize().background(tileBg),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = post.description,
-                    color = Color(0xFF1A1A1A),
+                    color = AppColors.textPrimary,
                     fontSize = 11.sp,
                     maxLines = 5,
                     overflow = TextOverflow.Ellipsis,
@@ -315,7 +301,7 @@ fun RowScope.ProfileStat(count: String, label: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.weight(1f)
     ) {
-        Text(text = count, fontWeight = FontWeight.Bold, color = Color(0xFF1A1A1A), fontSize = 18.sp)
-        Text(text = label, color = Color(0xFF757575), fontSize = 12.sp)
+        Text(text = count, fontWeight = FontWeight.Bold, color = AppColors.textPrimary, fontSize = 18.sp)
+        Text(text = label, color = AppColors.textSecondary, fontSize = 12.sp)
     }
 }

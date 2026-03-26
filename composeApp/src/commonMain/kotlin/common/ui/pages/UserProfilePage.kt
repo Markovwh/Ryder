@@ -37,8 +37,10 @@ import common.data.PostRepository
 import common.data.UserRepository
 import common.model.Post
 import common.model.User
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.PostDetailDialog
 import common.ui.pages.components.RyderAccent
+import common.ui.pages.components.UserAvatar
 import kotlinx.coroutines.launch
 
 @Composable
@@ -65,6 +67,12 @@ fun UserProfilePage(
     var showBlockConfirm by remember { mutableStateOf(false) }
     var showFollowList by remember { mutableStateOf<FollowListType?>(null) }
 
+    val bg = AppColors.background
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val divider = AppColors.divider
+
     LaunchedEffect(userId) {
         isLoading = true
         try {
@@ -82,9 +90,9 @@ fun UserProfilePage(
     }
 
     Scaffold(
-        containerColor = Color(0xFFEEEEEE),
+        containerColor = bg,
         topBar = {
-            Surface(color = Color(0xFFF5F5F5), tonalElevation = 0.dp) {
+            Surface(color = surface, tonalElevation = 0.dp) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -93,11 +101,11 @@ fun UserProfilePage(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color(0xFF1A1A1A))
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = textPrimary)
                     }
                     Text(
                         text = user?.nickname ?: "",
-                        color = Color(0xFF1A1A1A),
+                        color = textPrimary,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 17.sp,
                         modifier = Modifier.weight(1f)
@@ -105,7 +113,7 @@ fun UserProfilePage(
                     if (currentUser != null) {
                         Box {
                             IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color(0xFF757575))
+                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = textSecondary)
                             }
                             DropdownMenu(
                                 expanded = showMenu,
@@ -143,7 +151,7 @@ fun UserProfilePage(
 
         val u = user ?: run {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Lietotājs nav atrasts", color = Color(0xFF757575))
+                Text("Lietotājs nav atrasts", color = textSecondary)
             }
             return@Scaffold
         }
@@ -159,51 +167,35 @@ fun UserProfilePage(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFF5F5F5))
+                        .background(surface)
                         .padding(horizontal = 20.dp, vertical = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Avatar
-                    val pic = u.profilePicture
-                    if (pic != null) {
-                        Image(
-                            painter = rememberAsyncImagePainter(pic),
-                            contentDescription = null,
-                            modifier = Modifier.size(90.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Surface(modifier = Modifier.size(90.dp), shape = CircleShape, color = RyderAccent) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = u.nickname.take(1).uppercase(),
-                                    color = Color(0xFF1A1A1A),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 36.sp
-                                )
-                            }
-                        }
-                    }
+                    UserAvatar(
+                        profilePicture = u.profilePicture,
+                        nickname = u.nickname,
+                        size = 90.dp
+                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Text(u.nickname, color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text(u.nickname, color = textPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     if (u.firstName.isNotEmpty() || u.lastName.isNotEmpty()) {
-                        Text("${u.firstName} ${u.lastName}".trim(), color = Color(0xFF757575), fontSize = 14.sp)
+                        Text("${u.firstName} ${u.lastName}".trim(), color = textSecondary, fontSize = 14.sp)
                     }
                     if (u.bio.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(u.bio, color = Color(0xFF1A1A1A), fontSize = 14.sp, textAlign = TextAlign.Center)
+                        Text(u.bio, color = textPrimary, fontSize = 14.sp, textAlign = TextAlign.Center)
                     }
                     if (u.bike.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("🏍 ${u.bike}", color = Color(0xFF757575), fontSize = 13.sp)
+                        Text("🏍 ${u.bike}", color = textSecondary, fontSize = 13.sp)
                     }
                     if (u.experienceYears > 0) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             "⏱ ${u.experienceYears} ${if (u.experienceYears == 1) "gads" else "gadi"} pieredze",
-                            color = Color(0xFF757575),
+                            color = textSecondary,
                             fontSize = 13.sp
                         )
                     }
@@ -215,11 +207,7 @@ fun UserProfilePage(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        ClickableStat(
-                            label = "Ieraksti",
-                            value = posts.size.toString(),
-                            onClick = null
-                        )
+                        ClickableStat(label = "Ieraksti", value = posts.size.toString(), onClick = null)
                         ClickableStat(
                             label = "Sekotāji",
                             value = followerCount.toString(),
@@ -235,9 +223,7 @@ fun UserProfilePage(
                     // Action buttons (only shown when viewing someone else's profile)
                     if (currentUser != null && currentUser.uid != userId) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             // Follow / Unfollow
                             Button(
                                 onClick = {
@@ -258,7 +244,7 @@ fun UserProfilePage(
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (isFollowing) Color.Transparent else RyderAccent,
-                                    contentColor = if (isFollowing) RyderAccent else Color(0xFF1A1A1A)
+                                    contentColor = if (isFollowing) RyderAccent else Color.White
                                 ),
                                 border = if (isFollowing) androidx.compose.foundation.BorderStroke(1.dp, RyderAccent) else null,
                                 shape = RoundedCornerShape(8.dp)
@@ -282,22 +268,18 @@ fun UserProfilePage(
                                         )
                                     )
                                 },
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1A1A1A)),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF9E9E9E)),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = textPrimary),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.inputBorder),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Icon(
-                                    Icons.Default.ChatBubble,
-                                    contentDescription = "Ziņa",
-                                    modifier = Modifier.size(16.dp)
-                                )
+                                Icon(Icons.Default.ChatBubble, contentDescription = "Ziņa", modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text("Ziņa")
                             }
                         }
                     }
                 }
-                HorizontalDivider(color = Color(0xFFD9D9D9))
+                HorizontalDivider(color = divider)
             }
 
             // ── Blocked state ────────────────────────────────────────────────
@@ -307,7 +289,7 @@ fun UserProfilePage(
                         modifier = Modifier.fillMaxWidth().padding(40.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Šis lietotājs ir bloķēts.", color = Color(0xFF757575), fontSize = 14.sp, textAlign = TextAlign.Center)
+                        Text("Šis lietotājs ir bloķēts.", color = textSecondary, fontSize = 14.sp, textAlign = TextAlign.Center)
                     }
                 }
                 return@LazyColumn
@@ -320,10 +302,10 @@ fun UserProfilePage(
                         modifier = Modifier.fillMaxWidth().padding(40.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF757575), modifier = Modifier.size(48.dp))
+                        Icon(Icons.Default.Lock, contentDescription = null, tint = textSecondary, modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("Privāts profils", color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                        Text("Seko šim lietotājam, lai redzētu viņa ierakstus.", color = Color(0xFF757575), fontSize = 14.sp, textAlign = TextAlign.Center)
+                        Text("Privāts profils", color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                        Text("Seko šim lietotājam, lai redzētu viņa ierakstus.", color = textSecondary, fontSize = 14.sp, textAlign = TextAlign.Center)
                     }
                 }
                 return@LazyColumn
@@ -333,7 +315,7 @@ fun UserProfilePage(
             if (posts.isEmpty()) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
-                        Text("Nav ierakstu", color = Color(0xFF757575), fontSize = 14.sp)
+                        Text("Nav ierakstu", color = textSecondary, fontSize = 14.sp)
                     }
                 }
             } else {
@@ -346,7 +328,7 @@ fun UserProfilePage(
                                     .weight(1f)
                                     .aspectRatio(1f)
                                     .padding(1.dp)
-                                    .background(Color(0xFFD0D0D0))
+                                    .background(AppColors.avatarPlaceholder)
                                     .clickable { selectedPost = post }
                             ) {
                                 if (post.mediaUrls.isNotEmpty()) {
@@ -359,7 +341,7 @@ fun UserProfilePage(
                                 } else if (post.description.isNotEmpty()) {
                                     Text(
                                         text = post.description,
-                                        color = Color(0xFF1A1A1A),
+                                        color = textPrimary,
                                         fontSize = 11.sp,
                                         maxLines = 4,
                                         overflow = TextOverflow.Ellipsis,
@@ -392,11 +374,13 @@ fun UserProfilePage(
 
     // ── Block confirm dialog ──────────────────────────────────────────────────
     if (showBlockConfirm) {
+        val dialogSurface = AppColors.surface
+        val dialogTextPrimary = AppColors.textPrimary
         AlertDialog(
             onDismissRequest = { showBlockConfirm = false },
-            containerColor = Color(0xFFF5F5F5),
-            title = { Text("Bloķēt lietotāju?", color = Color(0xFF1A1A1A)) },
-            text = { Text("Šis lietotājs vairs nevarēs redzēt tavu profilu un jūs abi pārstāsiet sekot viens otram.", color = Color(0xFF757575)) },
+            containerColor = dialogSurface,
+            title = { Text("Bloķēt lietotāju?", color = dialogTextPrimary) },
+            text = { Text("Šis lietotājs vairs nevarēs redzēt tavu profilu un jūs abi pārstāsiet sekot viens otram.", color = AppColors.textSecondary) },
             confirmButton = {
                 TextButton(onClick = {
                     showBlockConfirm = false
@@ -411,7 +395,7 @@ fun UserProfilePage(
                 }) { Text("Bloķēt", color = Color(0xFFE53935)) }
             },
             dismissButton = {
-                TextButton(onClick = { showBlockConfirm = false }) { Text("Atcelt", color = Color(0xFF757575)) }
+                TextButton(onClick = { showBlockConfirm = false }) { Text("Atcelt", color = AppColors.textSecondary) }
             }
         )
     }
@@ -448,6 +432,11 @@ private fun FollowListDialog(
     var users by remember { mutableStateOf<List<User>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val divider = AppColors.divider
+
     LaunchedEffect(userId, type) {
         isLoading = true
         try {
@@ -466,7 +455,7 @@ private fun FollowListDialog(
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.7f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFF5F5F5))
+                .background(surface)
         ) {
             // Header
             Row(
@@ -477,14 +466,14 @@ private fun FollowListDialog(
             ) {
                 Text(
                     text = if (type == FollowListType.FOLLOWERS) "Sekotāji" else "Seko",
-                    color = Color(0xFF1A1A1A),
+                    color = textPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = onDismiss) { Text("Aizvērt", color = Color(0xFF757575)) }
+                TextButton(onClick = onDismiss) { Text("Aizvērt", color = textSecondary) }
             }
-            HorizontalDivider(color = Color(0xFFD9D9D9))
+            HorizontalDivider(color = divider)
 
             when {
                 isLoading -> {
@@ -496,7 +485,7 @@ private fun FollowListDialog(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
                             text = if (type == FollowListType.FOLLOWERS) "Nav sekotāju" else "Neseko nevienam",
-                            color = Color(0xFF757575),
+                            color = textSecondary,
                             fontSize = 14.sp
                         )
                     }
@@ -511,35 +500,20 @@ private fun FollowListDialog(
                                     .padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                val pic = u.profilePicture
-                                if (pic != null) {
-                                    Image(
-                                        painter = rememberAsyncImagePainter(pic),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(44.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = RyderAccent) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = u.nickname.take(1).uppercase(),
-                                                color = Color(0xFF1A1A1A),
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 18.sp
-                                            )
-                                        }
-                                    }
-                                }
+                                UserAvatar(
+                                    profilePicture = u.profilePicture,
+                                    nickname = u.nickname,
+                                    size = 44.dp
+                                )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text(u.nickname, color = Color(0xFF1A1A1A), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                                    Text(u.nickname, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                                     if (u.firstName.isNotEmpty() || u.lastName.isNotEmpty()) {
-                                        Text("${u.firstName} ${u.lastName}".trim(), color = Color(0xFF757575), fontSize = 13.sp)
+                                        Text("${u.firstName} ${u.lastName}".trim(), color = textSecondary, fontSize = 13.sp)
                                     }
                                 }
                             }
-                            HorizontalDivider(color = Color(0xFFD9D9D9))
+                            HorizontalDivider(color = divider)
                         }
                     }
                 }
@@ -556,7 +530,7 @@ private fun ClickableStat(label: String, value: String, onClick: (() -> Unit)?) 
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     ) {
-        Text(text = value, color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        Text(text = label, color = Color(0xFF757575), fontSize = 12.sp)
+        Text(text = value, color = AppColors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text(text = label, color = AppColors.textSecondary, fontSize = 12.sp)
     }
 }

@@ -10,6 +10,8 @@ data class Message(
     val sharedPostDescription: String = "",
     val sharedPostMediaUrl: String = "",
     val sharedPostUserNickname: String = "",
+    val sharedPostUserId: String = "",
+    val sharedPostUserPicture: String = "",
     val createdAt: Long = 0L
 ) {
     val hasSharedPost: Boolean get() = sharedPostId.isNotEmpty()

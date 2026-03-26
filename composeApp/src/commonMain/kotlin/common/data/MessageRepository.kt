@@ -51,15 +51,17 @@ class MessageRepository {
             message.mediaUrls.isNotEmpty() -> "📷 Foto/video"
             else -> message.text.take(60)
         }
-        // Use set+merge so this works even if the conversation document doesn't exist yet
-        conversationsRef.document(conversationId).set(
-            mapOf(
-                "lastMessage" to preview,
-                "lastMessageSenderId" to message.senderId,
-                "lastUpdated" to System.currentTimeMillis()
-            ),
-            SetOptions.merge()
-        ).await()
+        // Always include id and participants so both users can discover this conversation.
+        // conversationId is "uid1_uid2" (sorted), so split gives the two participant UIDs.
+        val parts = conversationId.split("_")
+        val updateData = mutableMapOf<String, Any>(
+            "id" to conversationId,
+            "lastMessage" to preview,
+            "lastMessageSenderId" to message.senderId,
+            "lastUpdated" to System.currentTimeMillis()
+        )
+        if (parts.size == 2) updateData["participants"] = parts
+        conversationsRef.document(conversationId).set(updateData, SetOptions.merge()).await()
     }
 
     fun listenToMessages(conversationId: String, onUpdate: (List<Message>) -> Unit): () -> Unit {
@@ -104,6 +106,32 @@ class MessageRepository {
             .document(messageId)
             .delete()
             .await()
+    }
+
+    /**
+     * Finds conversations where this user appears in [participantNicknames] but the
+     * [participants] array is missing (old documents created before the field was added).
+     * Writes the missing array so [listenToConversations] can discover them.
+     */
+    suspend fun repairConversationsForUser(userId: String) {
+        try {
+            val snap = conversationsRef
+                .whereGreaterThanOrEqualTo("participantNicknames.$userId", "")
+                .get()
+                .await()
+            for (doc in snap.documents) {
+                val existing = (doc.get("participants") as? List<*>)
+                if (existing == null || userId !in existing) {
+                    val parts = doc.id.split("_")
+                    if (parts.size == 2 && userId in parts) {
+                        doc.reference.set(
+                            mapOf("participants" to parts, "id" to doc.id),
+                            SetOptions.merge()
+                        ).await()
+                    }
+                }
+            }
+        } catch (_: Exception) {}
     }
 
     suspend fun deleteConversation(conversationId: String) {

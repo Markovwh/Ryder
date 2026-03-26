@@ -2,25 +2,20 @@
 
 package common.ui.pages.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import coil.compose.rememberAsyncImagePainter
 import common.data.MessageRepository
 import common.model.Message
 import common.model.Post
@@ -39,6 +34,13 @@ fun ShareToUserDialog(
     var sentToNickname by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val textHint = AppColors.textHint
+    val inputBorder = AppColors.inputBorder
+    val divider = AppColors.divider
+
     LaunchedEffect(query) {
         results = if (query.length >= 2) {
             try { repo.searchUsers(query, currentUser.uid) } catch (_: Exception) { emptyList() }
@@ -55,12 +57,12 @@ fun ShareToUserDialog(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFF5F5F5))
+                .background(surface)
                 .padding(16.dp)
         ) {
             Text(
                 text = "Sūtīt draugam",
-                color = Color(0xFF1A1A1A),
+                color = textPrimary,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
             )
@@ -74,7 +76,7 @@ fun ShareToUserDialog(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
                 TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                    Text("Aizvērt", color = Color(0xFF757575))
+                    Text("Aizvērt", color = textSecondary)
                 }
                 return@Column
             }
@@ -82,14 +84,14 @@ fun ShareToUserDialog(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Meklēt lietotāju...", color = Color(0xFF9E9E9E)) },
+                placeholder = { Text("Meklēt lietotāju...", color = textHint) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color(0xFF1A1A1A),
-                    unfocusedTextColor = Color(0xFF1A1A1A),
+                    focusedTextColor = textPrimary,
+                    unfocusedTextColor = textPrimary,
                     focusedBorderColor = RyderAccent,
-                    unfocusedBorderColor = Color(0xFF9E9E9E),
+                    unfocusedBorderColor = inputBorder,
                     cursorColor = RyderAccent
                 ),
                 singleLine = true
@@ -99,7 +101,7 @@ fun ShareToUserDialog(
             if (results.isEmpty() && query.length >= 2) {
                 Text(
                     text = "Nav atrasts neviens lietotājs",
-                    color = Color(0xFF757575),
+                    color = textSecondary,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
@@ -120,7 +122,9 @@ fun ShareToUserDialog(
                                             sharedPostId = post.id,
                                             sharedPostDescription = post.description,
                                             sharedPostMediaUrl = post.mediaUrls.firstOrNull() ?: "",
-                                            sharedPostUserNickname = post.user.nickname
+                                            sharedPostUserNickname = post.user.nickname,
+                                            sharedPostUserId = post.userId,
+                                            sharedPostUserPicture = post.user.profilePicture ?: ""
                                         )
                                     )
                                     sentToNickname = user.nickname
@@ -130,37 +134,16 @@ fun ShareToUserDialog(
                         .padding(vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val pic = user.profilePicture
-                    if (pic != null) {
-                        Image(
-                            painter = rememberAsyncImagePainter(pic),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFD0D0D0)),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Surface(modifier = Modifier.size(40.dp), shape = CircleShape, color = RyderAccent) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = user.nickname.take(1).uppercase(),
-                                    color = Color(0xFF1A1A1A),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
+                    UserAvatar(profilePicture = user.profilePicture, nickname = user.nickname, size = 40.dp)
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = user.nickname, color = Color(0xFF1A1A1A), fontSize = 15.sp)
+                    Text(text = user.nickname, color = textPrimary, fontSize = 15.sp)
                 }
-                HorizontalDivider(color = Color(0xFFD9D9D9))
+                HorizontalDivider(color = divider)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                Text("Atcelt", color = Color(0xFF757575))
+                Text("Atcelt", color = textSecondary)
             }
         }
     }
