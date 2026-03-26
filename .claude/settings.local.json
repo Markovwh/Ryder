@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs sed:*)",
+      "Bash(perl -i -0pe 's/\\(containerColor = RyderAccent,?\\\\s*\\\\n\\\\s*contentColor = \\)Color\\\\\\(0xFF1A1A1A\\\\\\)/${1}Color.White/g' composeApp/src/commonMain/kotlin/common/ui/pages/RegistrationPage.kt composeApp/src/commonMain/kotlin/common/ui/pages/LoginPage.kt composeApp/src/commonMain/kotlin/common/ui/pages/GroupDetailPage.kt composeApp/src/commonMain/kotlin/common/ui/pages/EditProfileScreen.kt composeApp/src/commonMain/kotlin/common/ui/pages/CreatePostScreen.kt)",
+      "Bash(sed -i 's/ButtonDefaults.buttonColors\\(containerColor = RyderAccent, contentColor = Color\\(0xFF1A1A1A\\)\\)/ButtonDefaults.buttonColors\\(containerColor = RyderAccent, contentColor = Color.White\\)/g' composeApp/src/commonMain/kotlin/common/ui/pages/GroupDetailPage.kt)",
+      "Bash(sed -i 's/tint = Color\\(0xFF1A1A1A\\)/tint = Color.White/g' composeApp/src/commonMain/kotlin/common/ui/pages/Messages.kt)"
+    ]
+  }
+}
