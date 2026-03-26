@@ -34,7 +34,10 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
         scope.launch {
             val uid = authService.getCurrentUserId() ?: return@launch
             val result = authService.getUserData(uid)
-            if (result.isSuccess) currentUser = result.getOrNull()
+            if (result.isSuccess) {
+                currentUser = result.getOrNull()
+                isDarkTheme = userPreferences?.getDarkTheme(uid) ?: false
+            }
         }
     }
 
@@ -42,7 +45,6 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
     LaunchedEffect(Unit) {
         if (userPreferences != null) {
             val rememberMe = userPreferences.getRememberMe()
-            isDarkTheme = userPreferences.getDarkTheme()
             if (rememberMe && authService.getCurrentUserId() != null) {
                 loadCurrentUser()
                 currentScreen = Screen.Home
@@ -295,13 +297,14 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                             isDarkTheme = isDarkTheme,
                             onToggleDarkTheme = { dark: Boolean ->
                                 isDarkTheme = dark
-                                scope.launch { userPreferences?.setDarkTheme(dark) }
+                                scope.launch { userPreferences?.setDarkTheme(dark, currentUser?.uid) }
                             },
                             onEditProfile = { currentScreen = Screen.EditProfile },
                             onLogout = {
                                 scope.launch { userPreferences?.setRememberMe(false) }
                                 currentUser = null
                                 isGuest = false
+                                isDarkTheme = false
                                 currentScreen = Screen.Login
                             },
                             onBack = { currentScreen = Screen.Profile }

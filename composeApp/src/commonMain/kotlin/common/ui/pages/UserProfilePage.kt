@@ -328,7 +328,7 @@ fun UserProfilePage(
                                     .weight(1f)
                                     .aspectRatio(1f)
                                     .padding(1.dp)
-                                    .background(AppColors.avatarPlaceholder)
+                                    .background(AppColors.tileBackground)
                                     .clickable { selectedPost = post }
                             ) {
                                 if (post.mediaUrls.isNotEmpty()) {
