@@ -45,7 +45,10 @@ class PostRepository {
             .whereEqualTo("userId", userId)
             .get()
             .await()
-        return snapshot.toObjects(Post::class.java).sortedByDescending { it.createdAt }
+        return snapshot.documents
+            .mapNotNull { doc -> try { doc.toObject(Post::class.java) } catch (_: Exception) { null } }
+            .filter { it.groupId.isEmpty() }
+            .sortedByDescending { it.createdAt }
     }
 
     fun listenToPosts(onUpdate: (List<Post>) -> Unit) {
@@ -56,7 +59,7 @@ class PostRepository {
                 if (snapshot != null) {
                     val posts = snapshot.documents.mapNotNull {
                         try { it.toObject(Post::class.java) } catch (_: Exception) { null }
-                    }
+                    }.filter { it.groupId.isEmpty() }
                     onUpdate(posts.reversed())
                 }
             }
@@ -124,10 +127,13 @@ class PostRepository {
     suspend fun searchHashtags(query: String): List<Pair<String, Int>> {
         if (query.isBlank()) return emptyList()
         val normalizedQuery = query.trimStart('#').lowercase()
+        if (normalizedQuery.isEmpty()) return emptyList()
         val snap = postsRef.get().await()
         val hashtagRegex = Regex("#(\\w+)")
         val counts = mutableMapOf<String, Int>()
-        snap.toObjects(Post::class.java).forEach { post ->
+        snap.documents.forEach { doc ->
+            val post = try { doc.toObject(Post::class.java) } catch (_: Exception) { null } ?: return@forEach
+            if (post.groupId.isNotEmpty()) return@forEach
             hashtagRegex.findAll(post.description).forEach { match ->
                 val tag = match.groupValues[1].lowercase()
                 if (tag.contains(normalizedQuery)) {
@@ -142,10 +148,12 @@ class PostRepository {
     }
 
     suspend fun getPostsByHashtag(hashtag: String): List<Post> {
-        val tag = if (hashtag.startsWith("#")) hashtag.lowercase() else "#${hashtag.lowercase()}"
+        val word = hashtag.trimStart('#').lowercase()
+        val pattern = Regex("(?i)#${Regex.escape(word)}(?!\\w)")
         val snap = postsRef.get().await()
-        return snap.toObjects(Post::class.java)
-            .filter { it.description.lowercase().contains(tag) }
+        return snap.documents
+            .mapNotNull { doc -> try { doc.toObject(Post::class.java) } catch (_: Exception) { null } }
+            .filter { it.groupId.isEmpty() && pattern.containsMatchIn(it.description) }
             .sortedByDescending { it.createdAt }
     }
 

@@ -33,8 +33,10 @@ import common.data.GroupRepository
 import common.model.Group
 import common.model.Post
 import common.model.User
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -52,6 +54,7 @@ fun GroupDetailPage(
     var showMenu by remember { mutableStateOf(false) }
     var showInviteDialog by remember { mutableStateOf(false) }
     var showMembersDialog by remember { mutableStateOf(false) }
+    var showViewMembersDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     var showPostDialog by remember { mutableStateOf(false) }
     var showDeleteGroupConfirm by remember { mutableStateOf(false) }
@@ -74,9 +77,9 @@ fun GroupDetailPage(
     val regularPosts = posts.filter { it.id !in pinnedIds }
 
     Scaffold(
-        containerColor = Color(0xFFEEEEEE),
+        containerColor = AppColors.background,
         topBar = {
-            Surface(color = Color(0xFFF5F5F5)) {
+            Surface(color = AppColors.surface) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -85,11 +88,11 @@ fun GroupDetailPage(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color(0xFF1A1A1A))
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = AppColors.textPrimary)
                     }
                     Text(
                         text = g?.name ?: "Grupa",
-                        color = Color(0xFF1A1A1A),
+                        color = AppColors.textPrimary,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 17.sp,
                         modifier = Modifier.weight(1f)
@@ -97,7 +100,7 @@ fun GroupDetailPage(
                     if (currentUser != null && g != null) {
                         Box {
                             IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color(0xFF757575))
+                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = AppColors.textSecondary)
                             }
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                 if (isAdmin) {
@@ -159,7 +162,7 @@ fun GroupDetailPage(
         }
         if (g == null) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Grupa nav atrasta", color = Color(0xFF757575))
+                Text("Grupa nav atrasta", color = AppColors.textSecondary)
             }
             return@Scaffold
         }
@@ -173,6 +176,7 @@ fun GroupDetailPage(
                     group = g,
                     isMember = isMember,
                     currentUser = currentUser,
+                    onViewMembers = { showViewMembersDialog = true },
                     onJoin = {
                         scope.launch {
                             try {
@@ -182,7 +186,7 @@ fun GroupDetailPage(
                         }
                     }
                 )
-                HorizontalDivider(color = Color(0xFFD9D9D9))
+                HorizontalDivider(color = AppColors.divider)
             }
 
             if (pinnedPosts.isNotEmpty()) {
@@ -200,7 +204,7 @@ fun GroupDetailPage(
                         Spacer(Modifier.width(6.dp))
                         Text(
                             "Piespraustas ziņas",
-                            color = Color(0xFF1A1A1A),
+                            color = AppColors.textPrimary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
                         )
@@ -231,7 +235,7 @@ fun GroupDetailPage(
                         }
                     )
                 }
-                item { HorizontalDivider(color = Color(0xFFD9D9D9)) }
+                item { HorizontalDivider(color = AppColors.divider) }
             }
 
             if (regularPosts.isEmpty() && pinnedPosts.isEmpty()) {
@@ -243,7 +247,7 @@ fun GroupDetailPage(
                         Text(
                             if (isMember) "Nav ierakstu. Esi pirmais, kas publicē!"
                             else "Pievienojies grupai, lai redzētu ierakstus.",
-                            color = Color(0xFF757575),
+                            color = AppColors.textSecondary,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center
                         )
@@ -311,6 +315,14 @@ fun GroupDetailPage(
         )
     }
 
+    if (showViewMembersDialog && g != null) {
+        ViewMembersDialog(
+            group = g,
+            repo = repo,
+            onDismiss = { showViewMembersDialog = false }
+        )
+    }
+
     if (showEditDialog && g != null) {
         EditGroupDialog(
             group = g,
@@ -323,9 +335,9 @@ fun GroupDetailPage(
     if (showDeleteGroupConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteGroupConfirm = false },
-            containerColor = Color(0xFFF5F5F5),
-            title = { Text("Dzēst grupu?", color = Color(0xFF1A1A1A)) },
-            text = { Text("Šo darbību nevar atsaukt. Visi ieraksti tiks dzēsti.", color = Color(0xFF757575)) },
+            containerColor = AppColors.surface,
+            title = { Text("Dzēst grupu?", color = AppColors.textPrimary) },
+            text = { Text("Šo darbību nevar atsaukt. Visi ieraksti tiks dzēsti.", color = AppColors.textSecondary) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteGroupConfirm = false
@@ -337,7 +349,7 @@ fun GroupDetailPage(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteGroupConfirm = false }) {
-                    Text("Atcelt", color = Color(0xFF757575))
+                    Text("Atcelt", color = AppColors.textSecondary)
                 }
             }
         )
@@ -351,17 +363,18 @@ private fun GroupHeader(
     group: Group,
     isMember: Boolean,
     currentUser: User?,
+    onViewMembers: () -> Unit,
     onJoin: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().background(Color(0xFFF5F5F5)).padding(horizontal = 20.dp, vertical = 20.dp),
+        modifier = Modifier.fillMaxWidth().background(AppColors.surface).padding(horizontal = 20.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (group.pictureUrl != null) {
             Image(
                 painter = rememberAsyncImagePainter(group.pictureUrl),
                 contentDescription = null,
-                modifier = Modifier.size(80.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
+                modifier = Modifier.size(80.dp).clip(CircleShape).background(AppColors.divider),
                 contentScale = ContentScale.Crop
             )
         } else {
@@ -369,7 +382,7 @@ private fun GroupHeader(
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         group.name.take(1).uppercase(),
-                        color = Color(0xFF1A1A1A),
+                        color = Color.White,
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -377,18 +390,27 @@ private fun GroupHeader(
             }
         }
         Spacer(Modifier.height(12.dp))
-        Text(group.name, color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        Text(group.name, color = AppColors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp)
         if (group.description.isNotEmpty()) {
             Spacer(Modifier.height(6.dp))
             Text(
                 group.description,
-                color = Color(0xFF757575),
+                color = AppColors.textSecondary,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
             )
         }
         Spacer(Modifier.height(8.dp))
-        Text("${group.memberIds.size} biedri", color = Color(0xFF757575), fontSize = 13.sp)
+        Text(
+            text = "${group.memberIds.size} biedri",
+            color = RyderAccent,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .clickable(onClick = onViewMembers)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        )
         if (!isMember && currentUser != null) {
             Spacer(Modifier.height(16.dp))
             Button(
@@ -415,7 +437,7 @@ private fun GroupPostCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (isPinned) Color(0xFFECFCD3) else Color(0xFFF5F5F5))
+            .background(if (isPinned) RyderAccent.copy(alpha = 0.12f) else AppColors.surface)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -423,7 +445,7 @@ private fun GroupPostCard(
                 Image(
                     painter = rememberAsyncImagePainter(post.user.profilePicture),
                     contentDescription = null,
-                    modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
+                    modifier = Modifier.size(36.dp).clip(CircleShape).background(AppColors.divider),
                     contentScale = ContentScale.Crop
                 )
             } else {
@@ -431,7 +453,7 @@ private fun GroupPostCard(
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             post.user.nickname.take(1).uppercase(),
-                            color = Color(0xFF1A1A1A),
+                            color = Color.White,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -442,11 +464,11 @@ private fun GroupPostCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     post.user.nickname,
-                    color = Color(0xFF1A1A1A),
+                    color = AppColors.textPrimary,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp
                 )
-                Text(formatGroupPostTime(post.createdAt), color = Color(0xFF757575), fontSize = 11.sp)
+                Text(formatGroupPostTime(post.createdAt), color = AppColors.textSecondary, fontSize = 11.sp)
             }
             if (isPinned) {
                 Icon(
@@ -463,7 +485,7 @@ private fun GroupPostCard(
                         Icon(
                             Icons.Default.MoreVert,
                             contentDescription = null,
-                            tint = Color(0xFF757575),
+                            tint = AppColors.textSecondary,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -489,7 +511,7 @@ private fun GroupPostCard(
         }
         if (post.description.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
-            Text(post.description, color = Color(0xFF1A1A1A), fontSize = 14.sp)
+            Text(post.description, color = AppColors.textPrimary, fontSize = 14.sp)
         }
         if (post.mediaUrls.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
@@ -500,12 +522,12 @@ private fun GroupPostCard(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFD0D0D0)),
+                    .background(AppColors.divider),
                 contentScale = ContentScale.Crop
             )
         }
     }
-    HorizontalDivider(color = Color(0xFFD9D9D9))
+    HorizontalDivider(color = AppColors.divider)
 }
 
 // ── Create group post dialog ──────────────────────────────────────────────────
@@ -521,6 +543,7 @@ private fun CreateGroupPostDialog(
     var text by remember { mutableStateOf("") }
     var mediaUri by remember { mutableStateOf<Uri?>(null) }
     var isPosting by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -532,22 +555,22 @@ private fun CreateGroupPostDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFF5F5F5))
+                .background(AppColors.surface)
                 .padding(16.dp)
         ) {
-            Text("Jauns ieraksts", color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("Jauns ieraksts", color = AppColors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                placeholder = { Text("Ko vēlies dalīties?", color = Color(0xFF9E9E9E)) },
+                placeholder = { Text("Ko vēlies dalīties?", color = AppColors.inputBorder) },
                 modifier = Modifier.fillMaxWidth().height(120.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color(0xFF1A1A1A),
-                    unfocusedTextColor = Color(0xFF1A1A1A),
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
                     focusedBorderColor = RyderAccent,
-                    unfocusedBorderColor = Color(0xFF9E9E9E),
+                    unfocusedBorderColor = AppColors.inputBorder,
                     cursorColor = RyderAccent
                 ),
                 maxLines = 6
@@ -568,36 +591,46 @@ private fun CreateGroupPostDialog(
                         onClick = { mediaUri = null },
                         modifier = Modifier.align(Alignment.TopEnd)
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = null, tint = Color(0xFF1A1A1A))
+                        Icon(Icons.Default.Close, contentDescription = null, tint = AppColors.textPrimary)
                     }
                 }
+            }
+            if (errorMsg != null) {
+                Spacer(Modifier.height(6.dp))
+                Text(errorMsg!!, color = Color(0xFFE53935), fontSize = 13.sp)
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { imagePicker.launch("image/*") }) {
-                    Icon(Icons.Default.Image, contentDescription = "Pievienot attēlu", tint = Color(0xFF757575))
+                    Icon(Icons.Default.Image, contentDescription = "Pievienot attēlu", tint = AppColors.textSecondary)
                 }
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = onDismiss) { Text("Atcelt", color = Color(0xFF757575)) }
+                TextButton(onClick = onDismiss) { Text("Atcelt", color = AppColors.textSecondary) }
                 Spacer(Modifier.width(8.dp))
                 Button(
                     onClick = {
                         if (text.isBlank() && mediaUri == null) return@Button
                         isPosting = true
+                        errorMsg = null
                         scope.launch {
                             try {
-                                val urls = if (mediaUri != null) {
-                                    listOf(repo.uploadGroupPostMedia(mediaUri!!, groupId))
-                                } else emptyList()
-                                val newPost = Post(
-                                    userId = currentUser.uid,
-                                    user = currentUser,
-                                    description = text.trim(),
-                                    mediaUrls = urls
-                                )
-                                val saved = repo.createGroupPost(groupId, newPost)
-                                onPosted(saved)
-                            } catch (_: Exception) { isPosting = false }
+                                withTimeout(15_000L) {
+                                    val urls = if (mediaUri != null) {
+                                        listOf(repo.uploadGroupPostMedia(mediaUri!!, groupId))
+                                    } else emptyList()
+                                    val newPost = Post(
+                                        userId = currentUser.uid,
+                                        user = currentUser,
+                                        description = text.trim(),
+                                        mediaUrls = urls
+                                    )
+                                    val saved = repo.createGroupPost(groupId, newPost)
+                                    onPosted(saved)
+                                }
+                            } catch (_: Exception) {
+                                isPosting = false
+                                errorMsg = "Neizdevās publicēt. Pārbaudi savienojumu."
+                            }
                         }
                     },
                     enabled = !isPosting && (text.isNotBlank() || mediaUri != null),
@@ -638,22 +671,22 @@ private fun InviteUserDialog(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFF5F5F5))
+                .background(AppColors.surface)
                 .padding(16.dp)
         ) {
-            Text("Uzaicināt lietotāju", color = Color(0xFF1A1A1A), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text("Uzaicināt lietotāju", color = AppColors.textPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it; successMsg = null },
-                placeholder = { Text("Meklēt lietotāju...", color = Color(0xFF9E9E9E)) },
+                placeholder = { Text("Meklēt lietotāju...", color = AppColors.inputBorder) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color(0xFF1A1A1A),
-                    unfocusedTextColor = Color(0xFF1A1A1A),
+                    focusedTextColor = AppColors.textPrimary,
+                    unfocusedTextColor = AppColors.textPrimary,
                     focusedBorderColor = RyderAccent,
-                    unfocusedBorderColor = Color(0xFF9E9E9E),
+                    unfocusedBorderColor = AppColors.inputBorder,
                     cursorColor = RyderAccent
                 ),
                 singleLine = true
@@ -686,7 +719,7 @@ private fun InviteUserDialog(
                         Image(
                             painter = rememberAsyncImagePainter(pic),
                             contentDescription = null,
-                            modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
+                            modifier = Modifier.size(40.dp).clip(CircleShape).background(AppColors.divider),
                             contentScale = ContentScale.Crop
                         )
                     } else {
@@ -694,20 +727,20 @@ private fun InviteUserDialog(
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     user.nickname.take(1).uppercase(),
-                                    color = Color(0xFF1A1A1A),
+                                    color = Color.White,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
                     }
                     Spacer(Modifier.width(12.dp))
-                    Text(user.nickname, color = Color(0xFF1A1A1A), fontSize = 15.sp)
+                    Text(user.nickname, color = AppColors.textPrimary, fontSize = 15.sp)
                 }
-                HorizontalDivider(color = Color(0xFFD9D9D9))
+                HorizontalDivider(color = AppColors.divider)
             }
             Spacer(Modifier.height(8.dp))
             TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
-                Text("Aizvērt", color = Color(0xFF757575))
+                Text("Aizvērt", color = AppColors.textSecondary)
             }
         }
     }
@@ -738,7 +771,7 @@ private fun ManageMembersDialog(
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.75f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFF5F5F5))
+                .background(AppColors.surface)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
@@ -746,14 +779,14 @@ private fun ManageMembersDialog(
             ) {
                 Text(
                     "Biedri (${members.size})",
-                    color = Color(0xFF1A1A1A),
+                    color = AppColors.textPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = onDismiss) { Text("Aizvērt", color = Color(0xFF757575)) }
+                TextButton(onClick = onDismiss) { Text("Aizvērt", color = AppColors.textSecondary) }
             }
-            HorizontalDivider(color = Color(0xFFD9D9D9))
+            HorizontalDivider(color = AppColors.divider)
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(members, key = { it.uid }) { member ->
                     val isThisOwner = member.uid == group.ownerId
@@ -770,7 +803,7 @@ private fun ManageMembersDialog(
                             Image(
                                 painter = rememberAsyncImagePainter(pic),
                                 contentDescription = null,
-                                modifier = Modifier.size(44.dp).clip(CircleShape).background(Color(0xFFD0D0D0)),
+                                modifier = Modifier.size(44.dp).clip(CircleShape).background(AppColors.divider),
                                 contentScale = ContentScale.Crop
                             )
                         } else {
@@ -778,7 +811,7 @@ private fun ManageMembersDialog(
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(
                                         member.nickname.take(1).uppercase(),
-                                        color = Color(0xFF1A1A1A),
+                                        color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 18.sp
                                     )
@@ -789,7 +822,7 @@ private fun ManageMembersDialog(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 member.nickname,
-                                color = Color(0xFF1A1A1A),
+                                color = AppColors.textPrimary,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp
                             )
@@ -799,14 +832,14 @@ private fun ManageMembersDialog(
                                     isMemberAdmin -> "Administrators"
                                     else -> "Biedrs"
                                 },
-                                color = if (isThisOwner) RyderAccent else Color(0xFF757575),
+                                color = if (isThisOwner) RyderAccent else AppColors.textSecondary,
                                 fontSize = 12.sp
                             )
                         }
                         if (isOwner && !isThisOwner && member.uid != currentUserId) {
                             Box {
                                 IconButton(onClick = { showMemberMenu = true }) {
-                                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = Color(0xFF757575))
+                                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = AppColors.textSecondary)
                                 }
                                 DropdownMenu(
                                     expanded = showMemberMenu,
@@ -871,7 +904,7 @@ private fun ManageMembersDialog(
                             }
                         }
                     }
-                    HorizontalDivider(color = Color(0xFFD9D9D9))
+                    HorizontalDivider(color = AppColors.divider)
                 }
             }
         }
@@ -893,19 +926,19 @@ private fun EditGroupDialog(
     val scope = rememberCoroutineScope()
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color(0xFF1A1A1A),
-        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedTextColor = AppColors.textPrimary,
+        unfocusedTextColor = AppColors.textPrimary,
         focusedBorderColor = RyderAccent,
-        unfocusedBorderColor = Color(0xFF9E9E9E),
+        unfocusedBorderColor = AppColors.inputBorder,
         focusedLabelColor = RyderAccent,
-        unfocusedLabelColor = Color(0xFF757575),
+        unfocusedLabelColor = AppColors.textSecondary,
         cursorColor = RyderAccent
     )
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFFF5F5F5),
-        title = { Text("Rediģēt grupu", color = Color(0xFF1A1A1A)) },
+        containerColor = AppColors.surface,
+        title = { Text("Rediģēt grupu", color = AppColors.textPrimary) },
         text = {
             Column {
                 OutlinedTextField(
@@ -944,9 +977,143 @@ private fun EditGroupDialog(
             ) { Text("Saglabāt", color = RyderAccent) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Atcelt", color = Color(0xFF757575)) }
+            TextButton(onClick = onDismiss) { Text("Atcelt", color = AppColors.textSecondary) }
         }
     )
+}
+
+// ── View members dialog ───────────────────────────────────────────────────────
+
+@Composable
+private fun ViewMembersDialog(
+    group: Group,
+    repo: GroupRepository,
+    onDismiss: () -> Unit
+) {
+    var members by remember { mutableStateOf<List<User>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(group.id) {
+        members = try { repo.getUsersByIds(group.memberIds) } catch (_: Exception) { emptyList() }
+        isLoading = false
+    }
+
+    // Sort: owner first, then admins, then regular members
+    val sorted = remember(members, group.ownerId, group.adminIds) {
+        members.sortedWith(compareBy {
+            when (it.uid) {
+                group.ownerId -> 0
+                in group.adminIds -> 1
+                else -> 2
+            }
+        })
+    }
+
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .fillMaxHeight(0.75f)
+                .clip(RoundedCornerShape(16.dp))
+                .background(AppColors.surface)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Biedri (${group.memberIds.size})",
+                    color = AppColors.textPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onDismiss) { Text("Aizvērt", color = AppColors.textSecondary) }
+            }
+            HorizontalDivider(color = AppColors.divider)
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator(color = RyderAccent) }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(sorted, key = { it.uid }) { member ->
+                        val isOwner = member.uid == group.ownerId
+                        val isAdmin = !isOwner && member.uid in group.adminIds
+                        val roleLabel = when {
+                            isOwner -> "Īpašnieks"
+                            isAdmin -> "Administrators"
+                            else -> "Biedrs"
+                        }
+                        val roleColor = when {
+                            isOwner -> RyderAccent
+                            isAdmin -> Color(0xFF2E7D32)
+                            else -> AppColors.textSecondary
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val pic = member.profilePicture
+                            if (pic != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(pic),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(AppColors.divider),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = RyderAccent) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            member.nickname.take(1).uppercase(),
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 18.sp
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    member.nickname,
+                                    color = AppColors.textPrimary,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 15.sp
+                                )
+                                val fullName = "${member.firstName} ${member.lastName}".trim()
+                                if (fullName.isNotEmpty()) {
+                                    Text(fullName, color = AppColors.textSecondary, fontSize = 12.sp)
+                                }
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = roleColor.copy(alpha = 0.12f)
+                            ) {
+                                Text(
+                                    roleLabel,
+                                    color = roleColor,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        HorizontalDivider(color = AppColors.divider)
+                    }
+                }
+            }
+        }
+    }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

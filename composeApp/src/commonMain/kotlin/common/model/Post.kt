@@ -9,5 +9,6 @@ data class Post(
     val visibility: String = "Publisks",
     val createdAt: Long = 0L,
     val likeCount: Int = 0,
-    val commentCount: Int = 0
+    val commentCount: Int = 0,
+    val groupId: String = ""
 )

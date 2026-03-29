@@ -164,7 +164,7 @@ fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
             }
 
             if (post.description.isNotEmpty()) {
-                Text(
+                HashtagText(
                     text = post.description,
                     color = textPrimary,
                     fontSize = 14.sp,

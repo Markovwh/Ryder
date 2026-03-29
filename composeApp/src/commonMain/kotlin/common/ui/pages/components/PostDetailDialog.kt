@@ -204,7 +204,7 @@ fun PostDetailDialog(
                     // Description
                     if (post.description.isNotEmpty()) {
                         item {
-                            Text(
+                            HashtagText(
                                 text = post.description,
                                 color = textPrimary,
                                 fontSize = 14.sp,
