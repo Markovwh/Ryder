@@ -19,3 +19,11 @@ captures
 node_modules/
 GoogleService-Info.plist
 google-services.json
+*.jks
+*.keystore
+key.properties
+release.properties
+*.env
+.env.*
+secrets.properties
+apikeys.properties
