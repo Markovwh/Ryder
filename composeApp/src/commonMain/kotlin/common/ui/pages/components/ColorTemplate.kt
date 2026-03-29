@@ -8,6 +8,9 @@ val RyderAccent = Color(0xFF2678AB)
 
 val LocalIsDarkTheme = compositionLocalOf { false }
 
+/** Provide a handler to navigate to a hashtag feed; null means hashtags are styled but not tappable. */
+val LocalHashtagClickHandler = compositionLocalOf<((String) -> Unit)?> { null }
+
 object AppColors {
     val background: Color
         @Composable get() = if (LocalIsDarkTheme.current) Color(0xFF121212) else Color(0xFFEEEEEE)

@@ -12,6 +12,7 @@ import common.data.provideAuthService
 import common.data.UserPreferences
 import common.model.User
 import common.ui.pages.components.LocalIsDarkTheme
+import common.ui.pages.components.LocalHashtagClickHandler
 import kotlinx.coroutines.launch
 import ui.pages.components.NavBar
 import common.ui.pages.Screen
@@ -29,6 +30,8 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
     var isDarkTheme by remember { mutableStateOf(false) }
     // Tracks where to go back from UserProfile (can be opened from Search, Messages, or Chat)
     var userProfileBackDest: Screen by remember { mutableStateOf(Screen.Search) }
+    // Tracks where to go back from HashtagFeed (can be opened from any screen)
+    var hashtagBackDest: Screen by remember { mutableStateOf(Screen.Home) }
 
     fun loadCurrentUser() {
         scope.launch {
@@ -54,7 +57,13 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
 
     val colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
 
-    androidx.compose.runtime.CompositionLocalProvider(LocalIsDarkTheme provides isDarkTheme) {
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalIsDarkTheme provides isDarkTheme,
+        LocalHashtagClickHandler provides { hashtag ->
+            hashtagBackDest = currentScreen
+            currentScreen = Screen.HashtagFeed(hashtag)
+        }
+    ) {
     MaterialTheme(colorScheme = colorScheme) {
         Scaffold(
             bottomBar = {
@@ -191,7 +200,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     HashtagFeedPage(
                         hashtag = s.hashtag,
                         currentUser = currentUser,
-                        onBack = { currentScreen = Screen.Search }
+                        onBack = { currentScreen = hashtagBackDest }
                     )
                 }
 

@@ -4,7 +4,11 @@
       "Bash(xargs sed:*)",
       "Bash(perl -i -0pe 's/\\(containerColor = RyderAccent,?\\\\s*\\\\n\\\\s*contentColor = \\)Color\\\\\\(0xFF1A1A1A\\\\\\)/${1}Color.White/g' composeApp/src/commonMain/kotlin/common/ui/pages/RegistrationPage.kt composeApp/src/commonMain/kotlin/common/ui/pages/LoginPage.kt composeApp/src/commonMain/kotlin/common/ui/pages/GroupDetailPage.kt composeApp/src/commonMain/kotlin/common/ui/pages/EditProfileScreen.kt composeApp/src/commonMain/kotlin/common/ui/pages/CreatePostScreen.kt)",
       "Bash(sed -i 's/ButtonDefaults.buttonColors\\(containerColor = RyderAccent, contentColor = Color\\(0xFF1A1A1A\\)\\)/ButtonDefaults.buttonColors\\(containerColor = RyderAccent, contentColor = Color.White\\)/g' composeApp/src/commonMain/kotlin/common/ui/pages/GroupDetailPage.kt)",
-      "Bash(sed -i 's/tint = Color\\(0xFF1A1A1A\\)/tint = Color.White/g' composeApp/src/commonMain/kotlin/common/ui/pages/Messages.kt)"
+      "Bash(sed -i 's/tint = Color\\(0xFF1A1A1A\\)/tint = Color.White/g' composeApp/src/commonMain/kotlin/common/ui/pages/Messages.kt)",
+      "Bash(find /c/Users/User/AndroidStudioProjects/Ryder -name *.plist -o -name google-services.json -o -name *.env -o -name secrets.* -o -name keystore.* -o -name *.jks -o -name *.keystore)",
+      "Bash(find /c/Users/User/AndroidStudioProjects/Ryder -name local.properties -o -name *.env -o -name secrets.gradle -o -name apikeys.properties)",
+      "Bash(git -C /c/Users/User/AndroidStudioProjects/Ryder ls-files)",
+      "Bash(git:*)"
     ]
   }
 }

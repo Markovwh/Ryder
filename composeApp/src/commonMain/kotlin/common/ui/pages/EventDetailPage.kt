@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import common.data.EventRepository
 import common.model.Event
 import common.model.User
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -53,20 +54,27 @@ fun EventDetailPage(
     val isCreator = e != null && currentUser != null && e.creatorId == currentUser.uid
     val isAttending = e != null && currentUser != null && currentUser.uid in e.attendeeIds
 
+    val bg = AppColors.background
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val divColor = AppColors.divider
+    val inputBorder = AppColors.inputBorder
+
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color(0xFF1A1A1A),
-        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedTextColor = textPrimary,
+        unfocusedTextColor = textPrimary,
         focusedBorderColor = RyderAccent,
-        unfocusedBorderColor = Color(0xFF9E9E9E),
+        unfocusedBorderColor = inputBorder,
         focusedLabelColor = RyderAccent,
-        unfocusedLabelColor = Color(0xFF757575),
+        unfocusedLabelColor = textSecondary,
         cursorColor = RyderAccent
     )
 
     Scaffold(
-        containerColor = Color(0xFFEEEEEE),
+        containerColor = bg,
         topBar = {
-            Surface(color = Color(0xFFF5F5F5)) {
+            Surface(color = surface) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -75,11 +83,11 @@ fun EventDetailPage(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = Color(0xFF1A1A1A))
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atpakaļ", tint = textPrimary)
                     }
                     Text(
                         text = e?.name ?: "Notikums",
-                        color = Color(0xFF1A1A1A),
+                        color = textPrimary,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 17.sp,
                         modifier = Modifier.weight(1f)
@@ -87,7 +95,7 @@ fun EventDetailPage(
                     if (isCreator) {
                         Box {
                             IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = Color(0xFF757575))
+                                Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = textSecondary)
                             }
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                 DropdownMenuItem(
@@ -119,7 +127,7 @@ fun EventDetailPage(
         }
         if (e == null) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Notikums nav atrasts", color = Color(0xFF757575))
+                Text("Notikums nav atrasts", color = textSecondary)
             }
             return@Scaffold
         }
@@ -132,7 +140,7 @@ fun EventDetailPage(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFF5F5F5))
+                        .background(surface)
                         .padding(28.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -142,39 +150,41 @@ fun EventDetailPage(
                                 Icon(
                                     Icons.Default.Event,
                                     contentDescription = null,
-                                    tint = Color(0xFF1A1A1A),
+                                    tint = Color.White,
                                     modifier = Modifier.size(36.dp)
                                 )
                             }
                         }
                         Spacer(Modifier.height(16.dp))
-                        Text(
-                            e.name,
-                            color = Color(0xFF1A1A1A),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 22.sp
-                        )
+                        Text(e.name, color = textPrimary, fontWeight = FontWeight.Bold, fontSize = 22.sp)
                         Spacer(Modifier.height(4.dp))
-                        Text("Organizē: ${e.creatorNickname}", color = Color(0xFF757575), fontSize = 13.sp)
+                        Text("Organizē: ${e.creatorNickname}", color = textSecondary, fontSize = 13.sp)
                     }
                 }
             }
 
             item {
-                Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFF5F5F5)).padding(20.dp)) {
-                    EventInfoRow(icon = Icons.Default.Place, label = "Vieta", value = e.place)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(surface)
+                        .padding(20.dp)
+                ) {
+                    EventInfoRow(icon = Icons.Default.Place, label = "Vieta", value = e.place, textPrimary = textPrimary, textSecondary = textSecondary)
                     Spacer(Modifier.height(16.dp))
                     EventInfoRow(
                         icon = Icons.Default.CalendarMonth,
                         label = "Datums un laiks",
-                        value = formatEventDateTime(e.dateTime)
+                        value = formatEventDateTime(e.dateTime),
+                        textPrimary = textPrimary,
+                        textSecondary = textSecondary
                     )
                     if (e.description.isNotEmpty()) {
                         Spacer(Modifier.height(16.dp))
-                        EventInfoRow(icon = Icons.Default.Info, label = "Apraksts", value = e.description)
+                        EventInfoRow(icon = Icons.Default.Info, label = "Apraksts", value = e.description, textPrimary = textPrimary, textSecondary = textSecondary)
                     }
                     Spacer(Modifier.height(24.dp))
-                    HorizontalDivider(color = Color(0xFFD9D9D9))
+                    HorizontalDivider(color = divColor)
                     Spacer(Modifier.height(20.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -184,7 +194,7 @@ fun EventDetailPage(
                         Column {
                             Text(
                                 "${e.attendeeIds.size} apmeklētāji",
-                                color = Color(0xFF1A1A1A),
+                                color = textPrimary,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp
                             )
@@ -210,7 +220,7 @@ fun EventDetailPage(
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (isAttending) Color.Transparent else RyderAccent,
-                                    contentColor = if (isAttending) RyderAccent else Color(0xFF1A1A1A)
+                                    contentColor = if (isAttending) RyderAccent else Color.White
                                 ),
                                 border = if (isAttending)
                                     androidx.compose.foundation.BorderStroke(1.dp, RyderAccent) else null,
@@ -234,9 +244,9 @@ fun EventDetailPage(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            containerColor = Color(0xFFF5F5F5),
-            title = { Text("Dzēst notikumu?", color = Color(0xFF1A1A1A)) },
-            text = { Text("Šo darbību nevar atsaukt.", color = Color(0xFF757575)) },
+            containerColor = surface,
+            title = { Text("Dzēst notikumu?", color = textPrimary) },
+            text = { Text("Šo darbību nevar atsaukt.", color = textSecondary) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
@@ -248,7 +258,7 @@ fun EventDetailPage(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Atcelt", color = Color(0xFF757575))
+                    Text("Atcelt", color = textSecondary)
                 }
             }
         )
@@ -257,8 +267,8 @@ fun EventDetailPage(
     if (showEditDialog && e != null) {
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
-            containerColor = Color(0xFFF5F5F5),
-            title = { Text("Rediģēt notikumu", color = Color(0xFF1A1A1A)) },
+            containerColor = surface,
+            title = { Text("Rediģēt notikumu", color = textPrimary) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
@@ -304,21 +314,27 @@ fun EventDetailPage(
                 }) { Text("Saglabāt", color = RyderAccent) }
             },
             dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) { Text("Atcelt", color = Color(0xFF757575)) }
+                TextButton(onClick = { showEditDialog = false }) { Text("Atcelt", color = textSecondary) }
             }
         )
     }
 }
 
 @Composable
-private fun EventInfoRow(icon: ImageVector, label: String, value: String) {
+private fun EventInfoRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    textPrimary: androidx.compose.ui.graphics.Color,
+    textSecondary: androidx.compose.ui.graphics.Color
+) {
     Row(verticalAlignment = Alignment.Top) {
         Icon(icon, contentDescription = null, tint = RyderAccent, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(12.dp))
         Column {
-            Text(label, color = Color(0xFF757575), fontSize = 12.sp)
+            Text(label, color = textSecondary, fontSize = 12.sp)
             Spacer(Modifier.height(2.dp))
-            Text(value, color = Color(0xFF1A1A1A), fontSize = 15.sp)
+            Text(value, color = textPrimary, fontSize = 15.sp)
         }
     }
 }

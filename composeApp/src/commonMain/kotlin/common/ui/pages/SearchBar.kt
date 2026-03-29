@@ -131,7 +131,10 @@ fun SearchPage(
         OutlinedTextField(
             shape = RoundedCornerShape(24.dp),
             value = query,
-            onValueChange = { query = it },
+            onValueChange = {
+                query = it
+                if (it.startsWith("#")) selectedTab = SearchTab.HASHTAGS
+            },
             placeholder = { Text("Meklēt lietotājus, grupas, pasākumus...", color = textHint) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = textSecondary) },
             trailingIcon = {

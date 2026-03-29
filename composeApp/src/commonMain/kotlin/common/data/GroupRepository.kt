@@ -3,7 +3,6 @@ package common.data
 import android.net.Uri
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
 import common.model.Group
 import common.model.Post
@@ -15,6 +14,7 @@ class GroupRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
     private val groupsRef = firestore.collection("groups")
+    private val postsRef = firestore.collection("posts")
 
     // ── Group CRUD ────────────────────────────────────────────────────────────
 
@@ -33,7 +33,7 @@ class GroupRepository {
     }
 
     suspend fun deleteGroup(groupId: String) {
-        val posts = groupsRef.document(groupId).collection("posts").get().await()
+        val posts = postsRef.whereEqualTo("groupId", groupId).get().await()
         posts.documents.forEach { it.reference.delete().await() }
         groupsRef.document(groupId).delete().await()
     }
@@ -115,21 +115,23 @@ class GroupRepository {
     // ── Group posts ───────────────────────────────────────────────────────────
 
     suspend fun createGroupPost(groupId: String, post: Post): Post {
-        val doc = groupsRef.document(groupId).collection("posts").document()
-        val newPost = post.copy(id = doc.id, createdAt = System.currentTimeMillis())
+        val doc = postsRef.document()
+        val newPost = post.copy(id = doc.id, createdAt = System.currentTimeMillis(), groupId = groupId)
         doc.set(newPost).await()
         return newPost
     }
 
     suspend fun getGroupPosts(groupId: String): List<Post> {
-        val snap = groupsRef.document(groupId).collection("posts")
-            .orderBy("createdAt", Query.Direction.DESCENDING)
+        val snap = postsRef
+            .whereEqualTo("groupId", groupId)
             .get().await()
-        return snap.toObjects(Post::class.java)
+        return snap.documents
+            .mapNotNull { doc -> try { doc.toObject(Post::class.java) } catch (_: Exception) { null } }
+            .sortedByDescending { it.createdAt }
     }
 
     suspend fun deleteGroupPost(groupId: String, postId: String) {
-        groupsRef.document(groupId).collection("posts").document(postId).delete().await()
+        postsRef.document(postId).delete().await()
     }
 
     suspend fun pinGroupPost(groupId: String, postId: String) {
