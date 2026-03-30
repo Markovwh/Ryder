@@ -62,6 +62,7 @@ fun UserProfilePage(
     var isFollowing by remember { mutableStateOf(false) }
     var isBlocked by remember { mutableStateOf(false) }
     var followerCount by remember { mutableStateOf(0) }
+    var isFollowLoading by remember { mutableStateOf(false) }
     var selectedPost by remember { mutableStateOf<Post?>(null) }
     var showMenu by remember { mutableStateOf(false) }
     var showBlockConfirm by remember { mutableStateOf(false) }
@@ -78,7 +79,7 @@ fun UserProfilePage(
         try {
             val loaded = postRepo.getUserById(userId)
             user = loaded
-            followerCount = loaded?.followerCount ?: 0
+            followerCount = userRepo.getFollowerCount(userId)
             posts = postRepo.getPostsByUser(userId)
             val cu = currentUser?.uid
             if (cu != null) {
@@ -227,21 +228,27 @@ fun UserProfilePage(
                             // Follow / Unfollow
                             Button(
                                 onClick = {
+                                    if (isFollowLoading) return@Button
                                     val cu = currentUser.uid
                                     scope.launch {
+                                        isFollowLoading = true
                                         try {
                                             if (isFollowing) {
                                                 userRepo.unfollow(cu, userId)
                                                 isFollowing = false
-                                                followerCount -= 1
+                                                followerCount = maxOf(0, followerCount - 1)
                                             } else {
                                                 userRepo.follow(cu, userId)
                                                 isFollowing = true
                                                 followerCount += 1
                                             }
-                                        } catch (_: Exception) {}
+                                        } catch (_: Exception) {
+                                        } finally {
+                                            isFollowLoading = false
+                                        }
                                     }
                                 },
+                                enabled = !isFollowLoading,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (isFollowing) Color.Transparent else RyderAccent,
                                     contentColor = if (isFollowing) RyderAccent else Color.White
@@ -249,7 +256,15 @@ fun UserProfilePage(
                                 border = if (isFollowing) androidx.compose.foundation.BorderStroke(1.dp, RyderAccent) else null,
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Text(if (isFollowing) "Nesekot" else "Sekot")
+                                if (isFollowLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = if (isFollowing) RyderAccent else Color.White
+                                    )
+                                } else {
+                                    Text(if (isFollowing) "Nesekot" else "Sekot")
+                                }
                             }
 
                             // Message
@@ -422,7 +437,7 @@ enum class FollowListType { FOLLOWERS, FOLLOWING }
 // ── Follow list dialog ────────────────────────────────────────────────────────
 
 @Composable
-private fun FollowListDialog(
+fun FollowListDialog(
     userId: String,
     type: FollowListType,
     userRepo: UserRepository,
