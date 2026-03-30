@@ -33,14 +33,12 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
     // Tracks where to go back from HashtagFeed (can be opened from any screen)
     var hashtagBackDest: Screen by remember { mutableStateOf(Screen.Home) }
 
-    fun loadCurrentUser() {
-        scope.launch {
-            val uid = authService.getCurrentUserId() ?: return@launch
-            val result = authService.getUserData(uid)
-            if (result.isSuccess) {
-                currentUser = result.getOrNull()
-                isDarkTheme = userPreferences?.getDarkTheme(uid) ?: false
-            }
+    suspend fun loadCurrentUser() {
+        val uid = authService.getCurrentUserId() ?: return
+        val result = authService.getUserData(uid)
+        if (result.isSuccess) {
+            currentUser = result.getOrNull()
+            isDarkTheme = userPreferences?.getDarkTheme(uid) ?: false
         }
     }
 
@@ -292,7 +290,11 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                             onEditProfile = { currentScreen = Screen.EditProfile },
                             onOpenSettings = { currentScreen = Screen.Settings },
                             onOpenAdmin = { currentScreen = Screen.Admin },
-                            onUserRefreshed = { updatedUser -> currentUser = updatedUser }
+                            onUserRefreshed = { updatedUser -> currentUser = updatedUser },
+                            onOpenUser = { userId, nickname ->
+                                userProfileBackDest = Screen.Profile
+                                currentScreen = Screen.UserProfile(userId, nickname)
+                            }
                         )
                     } else {
                         currentScreen = Screen.Login

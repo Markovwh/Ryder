@@ -9,33 +9,42 @@ class UserRepository {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val usersRef = firestore.collection("users")
-    private val followsRef = firestore.collection("follows")
     private val blocksRef = firestore.collection("blocks")
 
-    private fun followDocId(followerId: String, followedId: String) = "${followerId}_${followedId}"
     private fun blockDocId(blockerId: String, blockedId: String) = "${blockerId}_${blockedId}"
 
     // ── Follow ────────────────────────────────────────────────────────────────
+    // Follow relationships are stored as a `following` array on each user's own
+    // document. This way a user only ever writes to their own document, which
+    // works with standard Firestore auth rules without any extra rule additions.
 
-    suspend fun isFollowing(currentUserId: String, targetUserId: String): Boolean =
-        followsRef.document(followDocId(currentUserId, targetUserId)).get().await().exists()
+    suspend fun isFollowing(currentUserId: String, targetUserId: String): Boolean {
+        val doc = usersRef.document(currentUserId).get().await()
+        @Suppress("UNCHECKED_CAST")
+        val following = doc.get("following") as? List<String>
+        return following?.contains(targetUserId) == true
+    }
 
     suspend fun follow(currentUserId: String, targetUserId: String) {
-        followsRef.document(followDocId(currentUserId, targetUserId)).set(
-            mapOf(
-                "followerId" to currentUserId,
-                "followedId" to targetUserId,
-                "createdAt" to System.currentTimeMillis()
-            )
+        // Write only to the current user's own document
+        usersRef.document(currentUserId).update(
+            "following", FieldValue.arrayUnion(targetUserId),
+            "followingCount", FieldValue.increment(1)
         ).await()
-        usersRef.document(targetUserId).update("followerCount", FieldValue.increment(1)).await()
-        usersRef.document(currentUserId).update("followingCount", FieldValue.increment(1)).await()
+        // Best-effort: update target's follower count (may fail if rules restrict cross-user writes)
+        try {
+            usersRef.document(targetUserId).update("followerCount", FieldValue.increment(1)).await()
+        } catch (_: Exception) {}
     }
 
     suspend fun unfollow(currentUserId: String, targetUserId: String) {
-        followsRef.document(followDocId(currentUserId, targetUserId)).delete().await()
-        usersRef.document(targetUserId).update("followerCount", FieldValue.increment(-1)).await()
-        usersRef.document(currentUserId).update("followingCount", FieldValue.increment(-1)).await()
+        usersRef.document(currentUserId).update(
+            "following", FieldValue.arrayRemove(targetUserId),
+            "followingCount", FieldValue.increment(-1)
+        ).await()
+        try {
+            usersRef.document(targetUserId).update("followerCount", FieldValue.increment(-1)).await()
+        } catch (_: Exception) {}
     }
 
     // ── Block ─────────────────────────────────────────────────────────────────
@@ -61,16 +70,22 @@ class UserRepository {
 
     // ── Followers / Following lists ───────────────────────────────────────────
 
+    suspend fun getFollowerCount(userId: String): Int =
+        usersRef.whereArrayContains("following", userId).get().await().size()
+
     suspend fun getFollowers(userId: String): List<User> {
-        val snap = followsRef.whereEqualTo("followedId", userId).get().await()
-        return snap.documents.mapNotNull { it.getString("followerId") }.mapNotNull { id ->
-            try { usersRef.document(id).get().await().toObject(User::class.java) } catch (_: Exception) { null }
+        // Query all users whose `following` array contains this userId
+        val snap = usersRef.whereArrayContains("following", userId).get().await()
+        return snap.documents.mapNotNull {
+            try { it.toObject(User::class.java) } catch (_: Exception) { null }
         }
     }
 
     suspend fun getFollowing(userId: String): List<User> {
-        val snap = followsRef.whereEqualTo("followerId", userId).get().await()
-        return snap.documents.mapNotNull { it.getString("followedId") }.mapNotNull { id ->
+        val doc = usersRef.document(userId).get().await()
+        @Suppress("UNCHECKED_CAST")
+        val ids = (doc.get("following") as? List<String>) ?: return emptyList()
+        return ids.mapNotNull { id ->
             try { usersRef.document(id).get().await().toObject(User::class.java) } catch (_: Exception) { null }
         }
     }

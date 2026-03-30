@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import common.data.AuthService
 import common.data.PostRepository
+import common.data.UserRepository
 import common.model.Post
 import common.model.User
 import common.ui.pages.components.AppColors
@@ -43,7 +44,8 @@ fun ProfilePage(
     onEditProfile: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAdmin: (() -> Unit)? = null,
-    onUserRefreshed: ((User) -> Unit)? = null
+    onUserRefreshed: ((User) -> Unit)? = null,
+    onOpenUser: ((String, String) -> Unit)? = null
 ) {
     val bg = AppColors.background
     val surface = AppColors.surface
@@ -56,7 +58,9 @@ fun ProfilePage(
     var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
     var isLoadingPosts by remember { mutableStateOf(true) }
     var selectedPost by remember { mutableStateOf<Post?>(null) }
+    var showFollowList by remember { mutableStateOf<FollowListType?>(null) }
     val repository = remember { PostRepository() }
+    val userRepo = remember { UserRepository() }
 
     LaunchedEffect(initialUser?.uid) {
         val uid = initialUser?.uid ?: authService.getCurrentUserId() ?: return@LaunchedEffect
@@ -184,11 +188,13 @@ fun ProfilePage(
                         )
                         ProfileStat(
                             count = (user?.followerCount ?: 0).toString(),
-                            label = "Sekotāji"
+                            label = "Sekotāji",
+                            onClick = { showFollowList = FollowListType.FOLLOWERS }
                         )
                         ProfileStat(
                             count = (user?.followingCount ?: 0).toString(),
-                            label = "Seko"
+                            label = "Seko",
+                            onClick = { showFollowList = FollowListType.FOLLOWING }
                         )
                     }
                     HorizontalDivider(color = dividerColor)
@@ -259,6 +265,22 @@ fun ProfilePage(
             }
         )
     }
+
+    showFollowList?.let { type ->
+        val uid = user?.uid
+        if (uid != null) {
+            FollowListDialog(
+                userId = uid,
+                type = type,
+                userRepo = userRepo,
+                onDismiss = { showFollowList = null },
+                onOpenUser = { targetUid, nickname ->
+                    showFollowList = null
+                    onOpenUser?.invoke(targetUid, nickname)
+                }
+            )
+        }
+    }
 }
 
 @Composable
@@ -296,10 +318,12 @@ private fun PostGridTile(post: Post, tileBg: Color, modifier: Modifier, onClick:
 }
 
 @Composable
-fun RowScope.ProfileStat(count: String, label: String) {
+fun RowScope.ProfileStat(count: String, label: String, onClick: (() -> Unit)? = null) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.weight(1f)
+        modifier = Modifier
+            .weight(1f)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         Text(text = count, fontWeight = FontWeight.Bold, color = AppColors.textPrimary, fontSize = 18.sp)
         Text(text = label, color = AppColors.textSecondary, fontSize = 12.sp)

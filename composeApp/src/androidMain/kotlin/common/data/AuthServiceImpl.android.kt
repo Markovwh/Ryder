@@ -33,7 +33,10 @@ class AuthServiceImplAndroid : AuthService {
                 "nickname" to nickname,
                 "firstName" to firstName,
                 "lastName" to lastName,
-                "createdAt" to System.currentTimeMillis()
+                "createdAt" to System.currentTimeMillis(),
+                "followerCount" to 0,
+                "followingCount" to 0,
+                "following" to emptyList<String>()
             )
 
             firestore.collection("users")
