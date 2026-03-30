@@ -28,10 +28,23 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
     var isGuest by remember { mutableStateOf(false) }
     var currentUser by remember { mutableStateOf<User?>(null) }
     var isDarkTheme by remember { mutableStateOf(false) }
-    // Tracks where to go back from UserProfile (can be opened from Search, Messages, or Chat)
-    var userProfileBackDest: Screen by remember { mutableStateOf(Screen.Search) }
-    // Tracks where to go back from HashtagFeed (can be opened from any screen)
-    var hashtagBackDest: Screen by remember { mutableStateOf(Screen.Home) }
+
+    // Back stack — push before every forward navigation, pop on back
+    val backStack = remember { mutableStateListOf<Screen>() }
+
+    fun navigateTo(screen: Screen) {
+        backStack.add(currentScreen)
+        currentScreen = screen
+    }
+
+    fun navigateBack() {
+        currentScreen = backStack.removeLastOrNull() ?: Screen.Home
+    }
+
+    fun navigateRoot(screen: Screen) {
+        backStack.clear()
+        currentScreen = screen
+    }
 
     suspend fun loadCurrentUser() {
         val uid = authService.getCurrentUserId() ?: return
@@ -48,18 +61,17 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
             val rememberMe = userPreferences.getRememberMe()
             if (rememberMe && authService.getCurrentUserId() != null) {
                 loadCurrentUser()
-                currentScreen = Screen.Home
+                navigateRoot(Screen.Home)
             }
         }
     }
 
     val colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
 
-    androidx.compose.runtime.CompositionLocalProvider(
+    CompositionLocalProvider(
         LocalIsDarkTheme provides isDarkTheme,
         LocalHashtagClickHandler provides { hashtag ->
-            hashtagBackDest = currentScreen
-            currentScreen = Screen.HashtagFeed(hashtag)
+            navigateTo(Screen.HashtagFeed(hashtag))
         }
     ) {
     MaterialTheme(colorScheme = colorScheme) {
@@ -77,28 +89,25 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                 ) {
                     NavBar(
                         currentScreen = currentScreen,
-                        onHome = { currentScreen = Screen.Home },
-                        onSearch = { currentScreen = Screen.Search },
+                        onHome    = { navigateRoot(Screen.Home) },
+                        onSearch  = { navigateRoot(Screen.Search) },
                         onAddPost = {
-                            if (!isGuest && authService.getCurrentUserId() != null) {
-                                currentScreen = Screen.CreatePost
-                            } else {
-                                currentScreen = Screen.Login
-                            }
+                            if (!isGuest && authService.getCurrentUserId() != null)
+                                navigateTo(Screen.CreatePost)
+                            else
+                                navigateRoot(Screen.Login)
                         },
                         onMessages = {
-                            if (!isGuest && authService.getCurrentUserId() != null) {
-                                currentScreen = Screen.Messages
-                            } else {
-                                currentScreen = Screen.Login
-                            }
+                            if (!isGuest && authService.getCurrentUserId() != null)
+                                navigateRoot(Screen.Messages)
+                            else
+                                navigateRoot(Screen.Login)
                         },
                         onProfile = {
-                            if (!isGuest && authService.getCurrentUserId() != null) {
-                                currentScreen = Screen.Profile
-                            } else {
-                                currentScreen = Screen.Login
-                            }
+                            if (!isGuest && authService.getCurrentUserId() != null)
+                                navigateRoot(Screen.Profile)
+                            else
+                                navigateRoot(Screen.Login)
                         }
                     )
                 }
@@ -114,13 +123,13 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                             val result = authService.register(email, password, nickname, firstName, lastName)
                             if (result.isSuccess) {
                                 authError = null
-                                currentScreen = Screen.Login
+                                navigateRoot(Screen.Login)
                             } else {
                                 authError = result.exceptionOrNull()?.message
                             }
                         }
                     },
-                    onLoginClick = { currentScreen = Screen.Login }
+                    onLoginClick = { navigateRoot(Screen.Login) }
                 )
 
                 Screen.Login -> LoginPage(
@@ -132,7 +141,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                                 userPreferences?.setRememberMe(rememberMe)
                                 loadCurrentUser()
                                 authError = null
-                                currentScreen = Screen.Home
+                                navigateRoot(Screen.Home)
                             } else {
                                 authError = result.exceptionOrNull()?.message
                             }
@@ -148,16 +157,16 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                             }
                         }
                     },
-                    onRegisterClick = { currentScreen = Screen.Registration },
+                    onRegisterClick = { navigateRoot(Screen.Registration) },
                     onContinueAsGuest = {
                         isGuest = true
-                        currentScreen = Screen.Home
+                        navigateRoot(Screen.Home)
                     }
                 )
 
                 Screen.Home -> Homepage(
-                    onLoginClick = { currentScreen = Screen.Login },
-                    onRegisterClick = { currentScreen = Screen.Registration },
+                    onLoginClick = { navigateRoot(Screen.Login) },
+                    onRegisterClick = { navigateRoot(Screen.Registration) },
                     isUserLoggedIn = authService.getCurrentUserId() != null && !isGuest,
                     currentUser = if (!isGuest) currentUser else null
                 )
@@ -165,17 +174,16 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                 Screen.Search -> SearchPage(
                     currentUser = currentUser,
                     onOpenUser = { userId, nickname ->
-                        userProfileBackDest = Screen.Search
-                        currentScreen = Screen.UserProfile(userId, nickname)
+                        navigateTo(Screen.UserProfile(userId, nickname))
                     },
                     onOpenHashtag = { hashtag ->
-                        currentScreen = Screen.HashtagFeed(hashtag)
+                        navigateTo(Screen.HashtagFeed(hashtag))
                     },
                     onOpenGroup = { groupId ->
-                        currentScreen = Screen.GroupDetail(groupId)
+                        navigateTo(Screen.GroupDetail(groupId))
                     },
                     onOpenEvent = { eventId ->
-                        currentScreen = Screen.EventDetail(eventId)
+                        navigateTo(Screen.EventDetail(eventId))
                     }
                 )
 
@@ -184,11 +192,10 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     UserProfilePage(
                         userId = s.userId,
                         currentUser = currentUser,
-                        onBack = { currentScreen = userProfileBackDest },
-                        onOpenChat = { chatScreen -> currentScreen = chatScreen },
+                        onBack = { navigateBack() },
+                        onOpenChat = { chatScreen -> navigateTo(chatScreen) },
                         onOpenUser = { uid, nickname ->
-                            userProfileBackDest = currentScreen
-                            currentScreen = Screen.UserProfile(uid, nickname)
+                            navigateTo(Screen.UserProfile(uid, nickname))
                         }
                     )
                 }
@@ -198,7 +205,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     HashtagFeedPage(
                         hashtag = s.hashtag,
                         currentUser = currentUser,
-                        onBack = { currentScreen = hashtagBackDest }
+                        onBack = { navigateBack() }
                     )
                 }
 
@@ -206,18 +213,17 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     if (!isGuest && authService.getCurrentUserId() != null) {
                         MessagesPage(
                             currentUser = currentUser,
-                            onOpenChat = { chatScreen -> currentScreen = chatScreen },
+                            onOpenChat = { chatScreen -> navigateTo(chatScreen) },
                             onOpenUser = { userId ->
-                                userProfileBackDest = Screen.Messages
-                                currentScreen = Screen.UserProfile(userId, "")
+                                navigateTo(Screen.UserProfile(userId, ""))
                             },
-                            onOpenGroup = { groupId -> currentScreen = Screen.GroupDetail(groupId) },
-                            onCreateGroup = { currentScreen = Screen.CreateGroup },
-                            onOpenEvent = { eventId -> currentScreen = Screen.EventDetail(eventId) },
-                            onCreateEvent = { currentScreen = Screen.CreateEvent }
+                            onOpenGroup = { groupId -> navigateTo(Screen.GroupDetail(groupId)) },
+                            onCreateGroup = { navigateTo(Screen.CreateGroup) },
+                            onOpenEvent = { eventId -> navigateTo(Screen.EventDetail(eventId)) },
+                            onCreateEvent = { navigateTo(Screen.CreateEvent) }
                         )
                     } else {
-                        currentScreen = Screen.Login
+                        navigateRoot(Screen.Login)
                     }
                 }
 
@@ -226,7 +232,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     GroupDetailPage(
                         groupId = s.groupId,
                         currentUser = currentUser,
-                        onBack = { currentScreen = Screen.Messages }
+                        onBack = { navigateBack() }
                     )
                 }
 
@@ -235,11 +241,15 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     if (!isGuest && authService.getCurrentUserId() != null && user != null) {
                         CreateGroupScreen(
                             currentUser = user,
-                            onCreated = { groupId -> currentScreen = Screen.GroupDetail(groupId) },
-                            onCancel = { currentScreen = Screen.Messages }
+                            onCreated = { groupId ->
+                                // Replace CreateGroup with GroupDetail in the flow;
+                                // backStack already holds the screen before CreateGroup
+                                currentScreen = Screen.GroupDetail(groupId)
+                            },
+                            onCancel = { navigateBack() }
                         )
                     } else {
-                        currentScreen = Screen.Login
+                        navigateRoot(Screen.Login)
                     }
                 }
 
@@ -248,7 +258,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     EventDetailPage(
                         eventId = s.eventId,
                         currentUser = currentUser,
-                        onBack = { currentScreen = Screen.Messages }
+                        onBack = { navigateBack() }
                     )
                 }
 
@@ -257,11 +267,13 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     if (!isGuest && authService.getCurrentUserId() != null && user != null) {
                         CreateEventScreen(
                             currentUser = user,
-                            onCreated = { eventId -> currentScreen = Screen.EventDetail(eventId) },
-                            onCancel = { currentScreen = Screen.Messages }
+                            onCreated = { eventId ->
+                                currentScreen = Screen.EventDetail(eventId)
+                            },
+                            onCancel = { navigateBack() }
                         )
                     } else {
-                        currentScreen = Screen.Login
+                        navigateRoot(Screen.Login)
                     }
                 }
 
@@ -271,14 +283,13 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                         ChatScreen(
                             chat = chatScreen,
                             currentUser = currentUser,
-                            onBack = { currentScreen = Screen.Messages },
+                            onBack = { navigateBack() },
                             onOpenUser = { userId ->
-                                userProfileBackDest = currentScreen
-                                currentScreen = Screen.UserProfile(userId, chatScreen.otherUserNickname)
+                                navigateTo(Screen.UserProfile(userId, chatScreen.otherUserNickname))
                             }
                         )
                     } else {
-                        currentScreen = Screen.Login
+                        navigateRoot(Screen.Login)
                     }
                 }
 
@@ -287,17 +298,16 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                         ProfilePage(
                             authService = authService,
                             initialUser = currentUser,
-                            onEditProfile = { currentScreen = Screen.EditProfile },
-                            onOpenSettings = { currentScreen = Screen.Settings },
-                            onOpenAdmin = { currentScreen = Screen.Admin },
+                            onEditProfile = { navigateTo(Screen.EditProfile) },
+                            onOpenSettings = { navigateTo(Screen.Settings) },
+                            onOpenAdmin = { navigateTo(Screen.Admin) },
                             onUserRefreshed = { updatedUser -> currentUser = updatedUser },
                             onOpenUser = { userId, nickname ->
-                                userProfileBackDest = Screen.Profile
-                                currentScreen = Screen.UserProfile(userId, nickname)
+                                navigateTo(Screen.UserProfile(userId, nickname))
                             }
                         )
                     } else {
-                        currentScreen = Screen.Login
+                        navigateRoot(Screen.Login)
                     }
                 }
 
@@ -310,18 +320,18 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                                 isDarkTheme = dark
                                 scope.launch { userPreferences?.setDarkTheme(dark, currentUser?.uid) }
                             },
-                            onEditProfile = { currentScreen = Screen.EditProfile },
+                            onEditProfile = { navigateTo(Screen.EditProfile) },
                             onLogout = {
                                 scope.launch { userPreferences?.setRememberMe(false) }
                                 currentUser = null
                                 isGuest = false
                                 isDarkTheme = false
-                                currentScreen = Screen.Login
+                                navigateRoot(Screen.Login)
                             },
-                            onBack = { currentScreen = Screen.Profile }
+                            onBack = { navigateBack() }
                         )
                     } else {
-                        currentScreen = Screen.Login
+                        navigateRoot(Screen.Login)
                     }
                 }
 
@@ -329,10 +339,10 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     if (!isGuest && currentUser?.isAdmin == true) {
                         AdminPage(
                             currentUser = currentUser,
-                            onBack = { currentScreen = Screen.Profile }
+                            onBack = { navigateBack() }
                         )
                     } else {
-                        currentScreen = Screen.Profile
+                        navigateRoot(Screen.Profile)
                     }
                 }
 
@@ -344,12 +354,12 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                             authService = authService,
                             onSaved = { updatedUser: User ->
                                 currentUser = updatedUser
-                                currentScreen = Screen.Profile
+                                navigateBack()
                             },
-                            onCancel = { currentScreen = Screen.Profile }
+                            onCancel = { navigateBack() }
                         )
                     } else {
-                        currentScreen = Screen.Login
+                        navigateRoot(Screen.Login)
                     }
                 }
 
@@ -358,11 +368,11 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     if (!isGuest && authService.getCurrentUserId() != null && user != null) {
                         CreatePostScreen(
                             currentUser = user,
-                            onPostCreated = { currentScreen = Screen.Profile },
-                            onCancel = { currentScreen = Screen.Home }
+                            onPostCreated = { navigateRoot(Screen.Profile) },
+                            onCancel = { navigateBack() }
                         )
                     } else {
-                        currentScreen = Screen.Login
+                        navigateRoot(Screen.Login)
                     }
                 }
             }
