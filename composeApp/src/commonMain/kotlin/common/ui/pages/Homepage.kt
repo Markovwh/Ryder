@@ -69,7 +69,7 @@ fun Homepage(
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 16.dp)
+                contentPadding = PaddingValues(bottom = 80.dp)
             ) {
                 items(posts) { post ->
                     PostCard(post = post, currentUser = currentUser)

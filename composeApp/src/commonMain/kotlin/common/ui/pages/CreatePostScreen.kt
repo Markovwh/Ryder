@@ -34,6 +34,8 @@ import common.model.User
 import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
 import common.ui.pages.components.UserAvatar
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.coroutines.launch
 
 @Composable
@@ -187,6 +189,7 @@ fun CreatePostScreen(
                         .fillMaxWidth()
                         .heightIn(min = 100.dp),
                     colors = textFieldColors,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, autoCorrect = false),
                     maxLines = 8
                 )
 

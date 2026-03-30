@@ -231,6 +231,7 @@ fun EditProfileScreen(
                 isError = nicknameError != null,
                 colors = textFieldColors,
                 singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Text, autoCorrect = false),
                 modifier = Modifier.fillMaxWidth()
             )
             nicknameError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
@@ -242,6 +243,7 @@ fun EditProfileScreen(
                 label = { Text("Vārds") },
                 colors = textFieldColors,
                 singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Text, autoCorrect = false),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -252,6 +254,7 @@ fun EditProfileScreen(
                 label = { Text("Uzvārds") },
                 colors = textFieldColors,
                 singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Text, autoCorrect = false),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -263,6 +266,7 @@ fun EditProfileScreen(
                 placeholder = { Text("Pastāsti par sevi...", color = AppColors.textHint) },
                 colors = textFieldColors,
                 maxLines = 4,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Text, autoCorrect = false),
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 80.dp)
@@ -276,6 +280,7 @@ fun EditProfileScreen(
                 placeholder = { Text("piem. Honda CB500F", color = Color(0xFF9E9E9E)) },
                 colors = textFieldColors,
                 singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Text, autoCorrect = false),
                 modifier = Modifier.fillMaxWidth()
             )
 

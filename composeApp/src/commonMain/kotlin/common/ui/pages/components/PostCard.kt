@@ -6,7 +6,10 @@ import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,6 +37,8 @@ import common.data.PostRepository
 import common.model.Comment
 import common.model.Post
 import common.model.User
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
@@ -206,7 +211,7 @@ fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
                 ) { showComments = true }
 
                 PostActionButton(
-                    icon = Icons.Default.Share,
+                    icon = Icons.Default.Send,
                     tint = textSecondary,
                     label = ""
                 ) {
@@ -361,13 +366,22 @@ private fun PostActionButton(
     label: String,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .clickable(onClick = onClick)
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .indication(interactionSource, LocalIndication.current),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        }
         if (label.isNotEmpty()) {
             Spacer(modifier = Modifier.width(4.dp))
             Text(text = label, color = AppColors.textSecondary, fontSize = 13.sp)
@@ -478,6 +492,7 @@ private fun CommentsSheet(
                             unfocusedBorderColor = AppColors.inputBorder,
                             cursorColor = RyderAccent
                         ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, autoCorrect = false),
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.width(8.dp))
