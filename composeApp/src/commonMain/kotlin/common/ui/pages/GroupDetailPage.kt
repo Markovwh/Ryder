@@ -35,6 +35,8 @@ import common.model.Post
 import common.model.User
 import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import java.text.SimpleDateFormat
@@ -573,6 +575,7 @@ private fun CreateGroupPostDialog(
                     unfocusedBorderColor = AppColors.inputBorder,
                     cursorColor = RyderAccent
                 ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, autoCorrect = false),
                 maxLines = 6
             )
             if (mediaUri != null) {
@@ -689,6 +692,7 @@ private fun InviteUserDialog(
                     unfocusedBorderColor = AppColors.inputBorder,
                     cursorColor = RyderAccent
                 ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, autoCorrect = false),
                 singleLine = true
             )
             successMsg?.let {

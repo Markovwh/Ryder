@@ -98,7 +98,7 @@ fun ProfilePage(
         LazyColumn(
             modifier = Modifier.fillMaxSize().background(bg),
             horizontalAlignment = Alignment.CenterHorizontally,
-            contentPadding = PaddingValues(bottom = 16.dp)
+            contentPadding = PaddingValues(bottom = 80.dp)
         ) {
             item {
                 Column(
