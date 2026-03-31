@@ -25,7 +25,7 @@ class AuthServiceImplAndroid : AuthService {
                 .await()
 
             val uid = result.user?.uid
-                ?: return Result.failure(Exception("User ID not found"))
+                ?: return Result.failure(Exception("Lietotāja ID nav atrasts"))
 
             val userData = hashMapOf(
                 "uid" to uid,
@@ -49,15 +49,16 @@ class AuthServiceImplAndroid : AuthService {
         } catch (e: FirebaseAuthException) {
 
             val message = when (e.errorCode) {
-                "ERROR_EMAIL_ALREADY_IN_USE" -> "Email already registered"
-                "ERROR_WEAK_PASSWORD" -> "Password is too weak"
-                else -> e.localizedMessage ?: "Registration failed"
+                "ERROR_EMAIL_ALREADY_IN_USE" -> "Šis e-pasts jau ir reģistrēts"
+                "ERROR_WEAK_PASSWORD" -> "Parole ir pārāk vāja"
+                "ERROR_INVALID_EMAIL" -> "Nederīgs e-pasta formāts"
+                else -> "Reģistrācija neizdevās"
             }
 
             Result.failure(Exception(message))
 
         } catch (e: Exception) {
-            Result.failure(Exception(e.localizedMessage ?: "Unknown error"))
+            Result.failure(Exception("Nezināma kļūda"))
         }
     }
 
@@ -73,15 +74,19 @@ class AuthServiceImplAndroid : AuthService {
         } catch (e: FirebaseAuthException) {
 
             val message = when (e.errorCode) {
-                "ERROR_USER_NOT_FOUND" -> "User not found"
-                "ERROR_WRONG_PASSWORD" -> "Incorrect password"
-                else -> e.localizedMessage ?: "Login failed"
+                "ERROR_USER_NOT_FOUND" -> "Lietotājs nav atrasts"
+                "ERROR_WRONG_PASSWORD" -> "Nepareiza parole"
+                "ERROR_INVALID_EMAIL" -> "Nederīgs e-pasta formāts"
+                "ERROR_INVALID_CREDENTIAL" -> "Nepareizs e-pasts vai parole"
+                "ERROR_USER_DISABLED" -> "Šis konts ir bloķēts"
+                "ERROR_TOO_MANY_REQUESTS" -> "Pārāk daudz mēģinājumu. Mēģiniet vēlāk"
+                else -> "Pieslēgšanās neizdevās"
             }
 
             Result.failure(Exception(message))
 
         } catch (e: Exception) {
-            Result.failure(Exception(e.localizedMessage ?: "Unknown error"))
+            Result.failure(Exception("Nezināma kļūda"))
         }
     }
 

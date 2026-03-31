@@ -151,7 +151,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                         scope.launch {
                             val result = authService.sendPasswordReset(email)
                             authError = if (result.isSuccess) {
-                                "Password reset email sent."
+                                "Paroles atiestatīšanas e-pasts nosūtīts."
                             } else {
                                 result.exceptionOrNull()?.message
                             }

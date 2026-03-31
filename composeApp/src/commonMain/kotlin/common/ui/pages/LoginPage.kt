@@ -76,7 +76,7 @@ fun LoginPage(
             value = email,
             onValueChange = { email = it; emailError = null },
             label = { Text("E-pasts") },
-            isError = emailError != null,
+            isError = emailError != null || backendError != null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             colors = textFieldColors,
             singleLine = true,
@@ -91,13 +91,16 @@ fun LoginPage(
             value = password,
             onValueChange = { password = it; passwordError = null },
             label = { Text("Parole") },
-            isError = passwordError != null,
+            isError = passwordError != null || backendError != null,
+            supportingText = {
+                val msg = passwordError ?: backendError
+                if (msg != null) Text(msg, color = Color(0xFFE53935))
+            },
             visualTransformation = PasswordVisualTransformation(),
             colors = textFieldColors,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        passwordError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
 
         Spacer(Modifier.height(12.dp))
 
@@ -162,9 +165,5 @@ fun LoginPage(
             }
         )
 
-        backendError?.let {
-            Spacer(Modifier.height(12.dp))
-            Text(it, color = Color(0xFFE53935), fontSize = 13.sp)
-        }
     }
 }
