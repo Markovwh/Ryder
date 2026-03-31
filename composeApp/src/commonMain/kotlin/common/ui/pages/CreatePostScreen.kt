@@ -49,6 +49,7 @@ fun CreatePostScreen(
     var visibility by remember { mutableStateOf("Publisks") }
     var isUploading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var validationError by remember { mutableStateOf<String?>(null) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val repository = PostRepository()
@@ -62,7 +63,7 @@ fun CreatePostScreen(
 
     val mediaPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia()
-    ) { uris -> selectedUris = selectedUris + uris }
+    ) { uris -> if (uris.isNotEmpty()) { selectedUris = selectedUris + uris; validationError = null } }
 
     val bg = AppColors.background
     val surface = AppColors.surface
@@ -111,9 +112,10 @@ fun CreatePostScreen(
                 Button(
                     onClick = {
                         if (description.isBlank() && selectedUris.isEmpty()) {
-                            errorMessage = "Pievienojiet aprakstu vai mediju"
+                            validationError = "Lūdzu ievadiet tekstu vai pievienojiet attēlu"
                             return@Button
                         }
+                        validationError = null
                         isUploading = true
                         errorMessage = null
                         scope.launch {
@@ -183,8 +185,9 @@ fun CreatePostScreen(
                 OutlinedTextField(
                     shape = RoundedCornerShape(12.dp),
                     value = description,
-                    onValueChange = { description = it },
+                    onValueChange = { description = it; if (it.isNotBlank()) validationError = null },
                     placeholder = { Text("Raksti ko notiek...", color = AppColors.textHint) },
+                    isError = validationError != null && description.isBlank(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 100.dp),
@@ -192,6 +195,9 @@ fun CreatePostScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, autoCorrect = false),
                     maxLines = 8
                 )
+                validationError?.let {
+                    Text(it, color = Color(0xFFE53935), fontSize = 12.sp)
+                }
 
                 Text("Foto / Video", color = textSecondary, fontSize = 13.sp)
 

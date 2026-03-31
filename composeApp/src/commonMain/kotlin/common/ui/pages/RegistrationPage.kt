@@ -68,7 +68,7 @@ fun RegistrationPage(
     ) {
 
         Text(
-            text = "Register",
+            text = "Reģistrācija",
             color = RyderAccent,
             fontSize = 34.sp,
             fontWeight = FontWeight.Bold
@@ -80,86 +80,106 @@ fun RegistrationPage(
             shape = RoundedCornerShape(12.dp),
             value = email,
             onValueChange = { email = it; emailError = null },
-            label = { Text("Email") },
+            label = { Text("E-pasts") },
             isError = emailError != null,
+            supportingText = {
+                Text(
+                    emailError ?: "Piemērs: lietotajs@epasts.lv",
+                    color = if (emailError != null) Color(0xFFE53935) else Color(0xFF757575)
+                )
+            },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             colors = textFieldColors,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        emailError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
             value = nickname,
             onValueChange = { nickname = it; nicknameError = null },
-            label = { Text("Nickname") },
+            label = { Text("Lietotājvārds") },
             isError = nicknameError != null,
+            supportingText = {
+                Text(
+                    nicknameError ?: "Redzams citiem lietotājiem",
+                    color = if (nicknameError != null) Color(0xFFE53935) else Color(0xFF757575)
+                )
+            },
             colors = textFieldColors,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        nicknameError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
             value = firstName,
             onValueChange = { firstName = it; firstNameError = null },
-            label = { Text("First Name") },
+            label = { Text("Vārds") },
             isError = firstNameError != null,
+            supportingText = {
+                Text(
+                    firstNameError ?: "Tavs īstais vārds",
+                    color = if (firstNameError != null) Color(0xFFE53935) else Color(0xFF757575)
+                )
+            },
             colors = textFieldColors,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        firstNameError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
             value = lastName,
             onValueChange = { lastName = it; lastNameError = null },
-            label = { Text("Last Name") },
+            label = { Text("Uzvārds") },
             isError = lastNameError != null,
+            supportingText = {
+                Text(
+                    lastNameError ?: "Tavs īstais uzvārds",
+                    color = if (lastNameError != null) Color(0xFFE53935) else Color(0xFF757575)
+                )
+            },
             colors = textFieldColors,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        lastNameError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
             value = password,
             onValueChange = { password = it; passwordError = null },
-            label = { Text("Password") },
+            label = { Text("Parole") },
             isError = passwordError != null,
+            supportingText = {
+                Text(
+                    passwordError ?: "Vismaz 8 simboli",
+                    color = if (passwordError != null) Color(0xFFE53935) else Color(0xFF757575)
+                )
+            },
             visualTransformation = PasswordVisualTransformation(),
             colors = textFieldColors,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        passwordError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
             value = confirmPassword,
             onValueChange = { confirmPassword = it; confirmPasswordError = null },
-            label = { Text("Confirm Password") },
+            label = { Text("Apstiprināt paroli") },
             isError = confirmPasswordError != null,
+            supportingText = {
+                Text(
+                    confirmPasswordError ?: "Ievadi paroli vēlreiz",
+                    color = if (confirmPasswordError != null) Color(0xFFE53935) else Color(0xFF757575)
+                )
+            },
             visualTransformation = PasswordVisualTransformation(),
             colors = textFieldColors,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(0.85f)
         )
-        confirmPasswordError?.let { Text(it, color = Color(0xFFE53935), fontSize = 12.sp) }
 
         backendError?.let {
             Spacer(modifier = Modifier.height(8.dp))
@@ -171,15 +191,15 @@ fun RegistrationPage(
         Button(
             onClick = {
                 var valid = true
-                if (email.isBlank()) { emailError = "Email is required"; valid = false }
-                else if (!email.matches(emailRegex)) { emailError = "Invalid email format"; valid = false }
-                if (nickname.isBlank()) { nicknameError = "Nickname is required"; valid = false }
-                if (firstName.isBlank()) { firstNameError = "First name is required"; valid = false }
-                if (lastName.isBlank()) { lastNameError = "Last name is required"; valid = false }
-                if (password.isBlank()) { passwordError = "Password is required"; valid = false }
-                else if (password.length < 8) { passwordError = "Password must be at least 8 characters"; valid = false }
-                if (confirmPassword.isBlank()) { confirmPasswordError = "Please confirm your password"; valid = false }
-                else if (password != confirmPassword) { confirmPasswordError = "Passwords do not match"; valid = false }
+                if (email.isBlank()) { emailError = "E-pasts ir obligāts"; valid = false }
+                else if (!email.matches(emailRegex)) { emailError = "Nederīgs e-pasta formāts"; valid = false }
+                if (nickname.isBlank()) { nicknameError = "Lietotājvārds ir obligāts"; valid = false }
+                if (firstName.isBlank()) { firstNameError = "Vārds ir obligāts"; valid = false }
+                if (lastName.isBlank()) { lastNameError = "Uzvārds ir obligāts"; valid = false }
+                if (password.isBlank()) { passwordError = "Parole ir obligāta"; valid = false }
+                else if (password.length < 8) { passwordError = "Parolei jābūt vismaz 8 simbolus garai"; valid = false }
+                if (confirmPassword.isBlank()) { confirmPasswordError = "Lūdzu apstipriniet paroli"; valid = false }
+                else if (password != confirmPassword) { confirmPasswordError = "Paroles nesakrīt"; valid = false }
                 if (valid) onRegister(email, password, nickname, firstName, lastName)
             },
             colors = ButtonDefaults.buttonColors(
@@ -188,13 +208,13 @@ fun RegistrationPage(
             ),
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
-            Text("Create Account", fontWeight = FontWeight.Bold)
+            Text("Izveidot kontu", fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = buildAnnotatedString { append("Already registered? Sign in instead") },
+            text = buildAnnotatedString { append("Jau reģistrējies? Ieiet sistēmā") },
             color = RyderAccent,
             fontSize = 14.sp,
             textDecoration = TextDecoration.Underline,
