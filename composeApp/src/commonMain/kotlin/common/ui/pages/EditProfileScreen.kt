@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ fun EditProfileScreen(
     onSaved: (User) -> Unit,
     onCancel: () -> Unit
 ) {
+    val context = LocalContext.current
     var nickname by remember { mutableStateOf(user.nickname) }
     var firstName by remember { mutableStateOf(user.firstName) }
     var lastName by remember { mutableStateOf(user.lastName) }
@@ -111,7 +113,7 @@ fun EditProfileScreen(
                     scope.launch {
                         try {
                             val newPictureUrl = if (pickedUri != null) {
-                                repository.uploadProfilePicture(pickedUri!!, user.uid)
+                                repository.uploadProfilePicture(pickedUri!!, user.uid, context)
                             } else {
                                 user.profilePicture
                             }
@@ -127,6 +129,11 @@ fun EditProfileScreen(
                             )
                             val result = authService.updateUserData(updatedUser)
                             if (result.isSuccess) {
+                                repository.updateUserProfileInPosts(
+                                    userId = user.uid,
+                                    profilePicture = newPictureUrl ?: "",
+                                    nickname = updatedUser.nickname
+                                )
                                 onSaved(updatedUser)
                             } else {
                                 errorMessage = result.exceptionOrNull()?.message ?: "Kļūda saglabājot"

@@ -1,12 +1,15 @@
 package common.data
 
+import android.content.Context
 import android.net.Uri
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import common.model.Comment
 import common.model.Post
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class PostRepository {
 
@@ -18,16 +21,38 @@ class PostRepository {
 
     // ── Media upload ──────────────────────────────────────────────────────────
 
-    suspend fun uploadMedia(uri: Uri, userId: String): String {
-        val filename = "${System.currentTimeMillis()}_${uri.lastPathSegment}"
+    suspend fun uploadMedia(uri: Uri, userId: String, context: Context): String {
+        val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+        val ext = when {
+            mimeType.startsWith("video") -> "mp4"
+            mimeType == "image/png" -> "png"
+            mimeType == "image/gif" -> "gif"
+            mimeType == "image/webp" -> "webp"
+            else -> "jpg"
+        }
+        val filename = "${System.currentTimeMillis()}.$ext"
         val ref = storage.reference.child("posts/$userId/$filename")
-        ref.putFile(uri).await()
-        return ref.downloadUrl.await().toString()
+
+        val tempFile = withContext(Dispatchers.IO) {
+            val file = java.io.File.createTempFile("upload_", ".$ext", context.cacheDir)
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                file.outputStream().use { output -> input.copyTo(output) }
+            } ?: run { file.delete(); throw Exception("Nevar atvērt attēlu") }
+            file
+        }
+        return try {
+            ref.putFile(android.net.Uri.fromFile(tempFile)).await()
+            ref.downloadUrl.await().toString()
+        } finally {
+            tempFile.delete()
+        }
     }
 
-    suspend fun uploadProfilePicture(uri: Uri, userId: String): String {
+    suspend fun uploadProfilePicture(uri: Uri, userId: String, context: Context): String {
         val ref = storage.reference.child("profiles/$userId/profile_picture")
-        ref.putFile(uri).await()
+        val stream = context.contentResolver.openInputStream(uri)
+            ?: throw Exception("Nevar atvērt attēlu")
+        stream.use { ref.putStream(it).await() }
         return ref.downloadUrl.await().toString()
     }
 
@@ -161,6 +186,18 @@ class PostRepository {
 
     suspend fun updatePost(postId: String, description: String) {
         postsRef.document(postId).update("description", description).await()
+    }
+
+    suspend fun updateUserProfileInPosts(userId: String, profilePicture: String, nickname: String) {
+        val snapshot = postsRef.whereEqualTo("userId", userId).get().await()
+        snapshot.documents.forEach { doc ->
+            doc.reference.update(
+                mapOf(
+                    "user.profilePicture" to profilePicture,
+                    "user.nickname" to nickname
+                )
+            ).await()
+        }
     }
 
     // ── Delete ────────────────────────────────────────────────────────────────
