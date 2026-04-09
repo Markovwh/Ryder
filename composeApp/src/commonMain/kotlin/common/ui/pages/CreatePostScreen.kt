@@ -35,6 +35,7 @@ import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
 import common.ui.pages.components.UserAvatar
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.coroutines.launch
 
@@ -51,15 +52,9 @@ fun CreatePostScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var validationError by remember { mutableStateOf<String?>(null) }
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
     val repository = PostRepository()
     val scope = rememberCoroutineScope()
-
-    LaunchedEffect(errorMessage) {
-        val msg = errorMessage ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(msg)
-        errorMessage = null
-    }
 
     val mediaPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia()
@@ -83,8 +78,7 @@ fun CreatePostScreen(
     )
 
     Scaffold(
-        containerColor = bg,
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        containerColor = bg
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -121,7 +115,7 @@ fun CreatePostScreen(
                         scope.launch {
                             try {
                                 val uploadedUrls = selectedUris.map { uri ->
-                                    repository.uploadMedia(uri, currentUser.uid)
+                                    repository.uploadMedia(uri, currentUser.uid, context)
                                 }
                                 val post = Post(
                                     userId = currentUser.uid,
@@ -196,6 +190,9 @@ fun CreatePostScreen(
                     maxLines = 8
                 )
                 validationError?.let {
+                    Text(it, color = Color(0xFFE53935), fontSize = 12.sp)
+                }
+                errorMessage?.let {
                     Text(it, color = Color(0xFFE53935), fontSize = 12.sp)
                 }
 
