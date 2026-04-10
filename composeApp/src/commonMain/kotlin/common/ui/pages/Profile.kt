@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +33,7 @@ import common.data.PostRepository
 import common.data.UserRepository
 import common.model.Post
 import common.model.User
+import kotlinx.coroutines.launch
 import common.ui.pages.components.AppColors
 import common.ui.pages.components.PostDetailDialog
 import common.ui.pages.components.RyderAccent
@@ -59,6 +61,7 @@ fun ProfilePage(
     var isLoadingPosts by remember { mutableStateOf(true) }
     var selectedPost by remember { mutableStateOf<Post?>(null) }
     var showFollowList by remember { mutableStateOf<FollowListType?>(null) }
+    var followRequestUsers by remember { mutableStateOf<List<User>>(emptyList()) }
     val repository = remember { PostRepository() }
     val userRepo = remember { UserRepository() }
 
@@ -75,6 +78,9 @@ fun ProfilePage(
         isLoadingPosts = true
         try { posts = repository.getPostsByUser(uid) } catch (_: Exception) {}
         isLoadingPosts = false
+        if (result.getOrNull()?.profilePrivacy == "Privāts") {
+            try { followRequestUsers = userRepo.getFollowRequestUsers(uid) } catch (_: Exception) {}
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(bg)) {
@@ -212,6 +218,78 @@ fun ProfilePage(
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+
+            // ── Follow requests section (private accounts only) ──────────────
+            if (followRequestUsers.isNotEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(surface)
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        Text(
+                            "Sekošanas pieprasījumi (${followRequestUsers.size})",
+                            color = textPrimary,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                    }
+                    HorizontalDivider(color = dividerColor)
+                }
+                items(followRequestUsers, key = { "req_${it.uid}" }) { requester ->
+                    val scope = rememberCoroutineScope()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(surface)
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        UserAvatar(
+                            profilePicture = requester.profilePicture,
+                            nickname = requester.nickname,
+                            size = 44.dp,
+                            modifier = if (onOpenUser != null) Modifier.clickable { onOpenUser.invoke(requester.uid, requester.nickname) } else Modifier
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(requester.nickname, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                            if (requester.firstName.isNotEmpty() || requester.lastName.isNotEmpty()) {
+                                Text("${requester.firstName} ${requester.lastName}".trim(), color = textSecondary, fontSize = 12.sp)
+                            }
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(
+                            onClick = {
+                                val uid = user?.uid ?: return@TextButton
+                                scope.launch {
+                                    try {
+                                        userRepo.declineFollowRequest(uid, requester.uid)
+                                        followRequestUsers = followRequestUsers.filter { it.uid != requester.uid }
+                                    } catch (_: Exception) {}
+                                }
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = textSecondary)
+                        ) { Text("Noraidīt", fontSize = 13.sp) }
+                        Button(
+                            onClick = {
+                                val uid = user?.uid ?: return@Button
+                                scope.launch {
+                                    try {
+                                        userRepo.acceptFollowRequest(uid, requester.uid)
+                                        followRequestUsers = followRequestUsers.filter { it.uid != requester.uid }
+                                    } catch (_: Exception) {}
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = RyderAccent, contentColor = Color.White),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                        ) { Text("Pieņemt", fontSize = 13.sp) }
+                    }
+                    HorizontalDivider(color = dividerColor)
                 }
             }
 

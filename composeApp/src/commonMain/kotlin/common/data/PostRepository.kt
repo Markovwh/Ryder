@@ -65,29 +65,69 @@ class PostRepository {
         return newPost
     }
 
-    suspend fun getPostsByUser(userId: String): List<Post> {
-        val snapshot = postsRef
-            .whereEqualTo("userId", userId)
-            .get()
-            .await()
+    /**
+     * Returns posts by [userId], filtering by visibility based on who is viewing.
+     *
+     * - [viewerId] == null or == [userId]  → all posts (own profile, no filtering)
+     * - visibility "Publisks"              → always visible
+     * - visibility "Privāts"              → hidden from everyone except the owner
+     * - visibility "Draugi"               → visible only when both users follow each other ([mutualFollow] == true)
+     */
+    suspend fun getPostsByUser(
+        userId: String,
+        viewerId: String? = null,
+        mutualFollow: Boolean = false
+    ): List<Post> {
+        val snapshot = postsRef.whereEqualTo("userId", userId).get().await()
         return snapshot.documents
             .mapNotNull { doc -> try { doc.toObject(Post::class.java) } catch (_: Exception) { null } }
-            .filter { it.groupId.isEmpty() }
+            .filter { post ->
+                if (post.groupId.isNotEmpty()) return@filter false
+                when {
+                    viewerId == null || viewerId == userId -> true
+                    post.visibility == "Publisks" -> true
+                    post.visibility == "Privāts" -> false
+                    post.visibility == "Draugi" -> mutualFollow
+                    else -> true
+                }
+            }
             .sortedByDescending { it.createdAt }
     }
 
-    fun listenToPosts(onUpdate: (List<Post>) -> Unit) {
-        postsRef
+    /**
+     * Listens to the feed and delivers only posts the viewer is allowed to see:
+     *
+     * - "Publisks"  → everyone
+     * - "Privāts"   → owner only
+     * - "Draugi"    → owner + mutual followers
+     *   (viewer follows owner AND owner follows viewer)
+     *
+     * Returns an unsubscribe lambda — call it when the composable leaves composition.
+     */
+    fun listenToPosts(
+        currentUserId: String?,
+        followingIds: Set<String>,   // UIDs that the current user follows
+        followerIds: Set<String>,    // UIDs that follow the current user
+        onUpdate: (List<Post>) -> Unit
+    ): () -> Unit {
+        val reg = postsRef
             .orderBy("createdAt")
             .addSnapshotListener { snapshot, error ->
-                if (error != null) return@addSnapshotListener
-                if (snapshot != null) {
-                    val posts = snapshot.documents.mapNotNull {
-                        try { it.toObject(Post::class.java) } catch (_: Exception) { null }
-                    }.filter { it.groupId.isEmpty() }
-                    onUpdate(posts.reversed())
-                }
+                if (error != null || snapshot == null) return@addSnapshotListener
+                val posts = snapshot.documents
+                    .mapNotNull { try { it.toObject(Post::class.java) } catch (_: Exception) { null } }
+                    .filter { post ->
+                        if (post.groupId.isNotEmpty()) return@filter false
+                        when (post.visibility) {
+                            "Privāts" -> post.userId == currentUserId
+                            "Draugi"  -> post.userId == currentUserId ||
+                                (followingIds.contains(post.userId) && followerIds.contains(post.userId))
+                            else -> true // "Publisks" or unset
+                        }
+                    }
+                onUpdate(posts.reversed())
             }
+        return { reg.remove() }
     }
 
     // ── Likes ─────────────────────────────────────────────────────────────────

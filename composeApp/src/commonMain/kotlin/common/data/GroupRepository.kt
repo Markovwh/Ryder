@@ -90,6 +90,28 @@ class GroupRepository {
         groupsRef.document(groupId).update("adminIds", FieldValue.arrayRemove(userId)).await()
     }
 
+    suspend fun sendInvite(groupId: String, userId: String) {
+        groupsRef.document(groupId).update("inviteIds", FieldValue.arrayUnion(userId)).await()
+    }
+
+    suspend fun acceptInvite(groupId: String, userId: String) {
+        groupsRef.document(groupId).update(
+            mapOf(
+                "inviteIds" to FieldValue.arrayRemove(userId),
+                "memberIds" to FieldValue.arrayUnion(userId)
+            )
+        ).await()
+    }
+
+    suspend fun declineInvite(groupId: String, userId: String) {
+        groupsRef.document(groupId).update("inviteIds", FieldValue.arrayRemove(userId)).await()
+    }
+
+    suspend fun getPendingInvitesForUser(userId: String): List<Group> {
+        val snap = groupsRef.whereArrayContains("inviteIds", userId).get().await()
+        return snap.toObjects(Group::class.java).sortedByDescending { it.createdAt }
+    }
+
     // ── User search ───────────────────────────────────────────────────────────
 
     suspend fun getUsersByIds(ids: List<String>): List<User> =

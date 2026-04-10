@@ -88,6 +88,20 @@ class MessageRepository {
         return { reg.remove() }
     }
 
+    suspend fun getUserProfilePictures(userIds: List<String>): Map<String, String?> {
+        if (userIds.isEmpty()) return emptyMap()
+        val result = mutableMapOf<String, String?>()
+        for (uid in userIds) {
+            try {
+                val doc = firestore.collection("users").document(uid).get().await()
+                result[uid] = doc.getString("profilePicture")
+            } catch (_: Exception) {
+                result[uid] = null
+            }
+        }
+        return result
+    }
+
     suspend fun searchUsers(query: String, currentUserId: String): List<User> {
         if (query.isBlank()) return emptyList()
         val snap = firestore.collection("users").get().await()

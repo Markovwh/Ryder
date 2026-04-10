@@ -60,6 +60,7 @@ fun UserProfilePage(
     var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var isFollowing by remember { mutableStateOf(false) }
+    var isRequested by remember { mutableStateOf(false) }
     var isBlocked by remember { mutableStateOf(false) }
     var followerCount by remember { mutableStateOf(0) }
     var isFollowLoading by remember { mutableStateOf(false) }
@@ -76,17 +77,38 @@ fun UserProfilePage(
 
     LaunchedEffect(userId) {
         isLoading = true
-        try {
-            val loaded = postRepo.getUserById(userId)
-            user = loaded
-            followerCount = userRepo.getFollowerCount(userId)
-            posts = postRepo.getPostsByUser(userId)
-            val cu = currentUser?.uid
-            if (cu != null) {
-                isFollowing = userRepo.isFollowing(cu, userId)
-                isBlocked = userRepo.isBlocked(cu, userId)
-            }
-        } catch (_: Exception) {}
+
+        user = try { postRepo.getUserById(userId) } catch (_: Exception) { null }
+        followerCount = try { userRepo.getFollowerCount(userId) } catch (_: Exception) { 0 }
+
+        val cu = currentUser?.uid
+        // Use local vars so a single failure doesn't block the rest of the load.
+        val following = if (cu != null) {
+            try { userRepo.isFollowing(cu, userId) } catch (_: Exception) { false }
+        } else false
+        val blocked = if (cu != null) {
+            try { userRepo.isBlocked(cu, userId) } catch (_: Exception) { false }
+        } else false
+        val requested = if (cu != null && !following) {
+            try { userRepo.hasSentFollowRequest(cu, userId) } catch (_: Exception) { false }
+        } else false
+        // Mutual-follow check for "Draugi" posts: does the owner also follow the viewer?
+        val ownerFollowsViewer = if (cu != null && following) {
+            try { userRepo.isFollowing(userId, cu) } catch (_: Exception) { false }
+        } else false
+
+        isFollowing = following
+        isBlocked = blocked
+        isRequested = requested
+
+        posts = try {
+            postRepo.getPostsByUser(
+                userId = userId,
+                viewerId = cu,
+                mutualFollow = following && ownerFollowsViewer
+            )
+        } catch (_: Exception) { emptyList() }
+
         isLoading = false
     }
 
@@ -225,7 +247,13 @@ fun UserProfilePage(
                     if (currentUser != null && currentUser.uid != userId) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            // Follow / Unfollow
+                            // Follow / Unfollow / Request
+                            val targetIsPrivate = u.profilePrivacy == "Privāts"
+                            val buttonLabel = when {
+                                isFollowing -> "Nesekot"
+                                isRequested -> "Pieprasīts"
+                                else -> "Sekot"
+                            }
                             Button(
                                 onClick = {
                                     if (isFollowLoading) return@Button
@@ -233,14 +261,25 @@ fun UserProfilePage(
                                     scope.launch {
                                         isFollowLoading = true
                                         try {
-                                            if (isFollowing) {
-                                                userRepo.unfollow(cu, userId)
-                                                isFollowing = false
-                                                followerCount = maxOf(0, followerCount - 1)
-                                            } else {
-                                                userRepo.follow(cu, userId)
-                                                isFollowing = true
-                                                followerCount += 1
+                                            when {
+                                                isFollowing -> {
+                                                    userRepo.unfollow(cu, userId)
+                                                    isFollowing = false
+                                                    followerCount = maxOf(0, followerCount - 1)
+                                                }
+                                                isRequested -> {
+                                                    userRepo.cancelFollowRequest(cu, userId)
+                                                    isRequested = false
+                                                }
+                                                targetIsPrivate -> {
+                                                    userRepo.sendFollowRequest(cu, userId)
+                                                    isRequested = true
+                                                }
+                                                else -> {
+                                                    userRepo.follow(cu, userId)
+                                                    isFollowing = true
+                                                    followerCount += 1
+                                                }
                                             }
                                         } catch (_: Exception) {
                                         } finally {
@@ -250,20 +289,20 @@ fun UserProfilePage(
                                 },
                                 enabled = !isFollowLoading,
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isFollowing) Color.Transparent else RyderAccent,
-                                    contentColor = if (isFollowing) RyderAccent else Color.White
+                                    containerColor = if (isFollowing || isRequested) Color.Transparent else RyderAccent,
+                                    contentColor = if (isFollowing || isRequested) RyderAccent else Color.White
                                 ),
-                                border = if (isFollowing) androidx.compose.foundation.BorderStroke(1.dp, RyderAccent) else null,
+                                border = if (isFollowing || isRequested) androidx.compose.foundation.BorderStroke(1.dp, RyderAccent) else null,
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 if (isFollowLoading) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(16.dp),
                                         strokeWidth = 2.dp,
-                                        color = if (isFollowing) RyderAccent else Color.White
+                                        color = if (isFollowing || isRequested) RyderAccent else Color.White
                                     )
                                 } else {
-                                    Text(if (isFollowing) "Nesekot" else "Sekot")
+                                    Text(buttonLabel)
                                 }
                             }
 
