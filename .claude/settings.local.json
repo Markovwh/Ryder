@@ -9,7 +9,11 @@
       "Bash(find /c/Users/User/AndroidStudioProjects/Ryder -name local.properties -o -name *.env -o -name secrets.gradle -o -name apikeys.properties)",
       "Bash(git -C /c/Users/User/AndroidStudioProjects/Ryder ls-files)",
       "Bash(git:*)",
-      "Bash(adb shell:*)"
+      "Bash(adb shell:*)",
+      "Bash(find:*)",
+      "Bash(grep -l \"Group\\\\|group\" /c/Users/User/AndroidStudioProjects/Ryder/composeApp/src/commonMain/kotlin/common/ui/pages/*.kt)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(xargs basename:*)"
     ]
   }
 }

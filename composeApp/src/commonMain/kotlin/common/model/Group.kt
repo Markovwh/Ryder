@@ -9,6 +9,7 @@ data class Group(
     val adminIds: List<String> = emptyList(),
     val memberIds: List<String> = emptyList(),
     val bannedIds: List<String> = emptyList(),
+    val inviteIds: List<String> = emptyList(),
     val pinnedPostIds: List<String> = emptyList(),
     val createdAt: Long = 0L
 )

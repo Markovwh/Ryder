@@ -55,10 +55,13 @@ fun MessagesPage(
     val groupRepo = remember { GroupRepository() }
     val eventRepo = remember { EventRepository() }
     var conversations by remember { mutableStateOf<List<Conversation>>(emptyList()) }
+    var freshPictures by remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
     var groups by remember { mutableStateOf<List<Group>>(emptyList()) }
+    var pendingInvites by remember { mutableStateOf<List<Group>>(emptyList()) }
     var events by remember { mutableStateOf<List<Event>>(emptyList()) }
     var selectedTab by remember { mutableStateOf(0) }
     var showNewChat by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     // Repair legacy conversations that are missing the `participants` array field
     LaunchedEffect(currentUser?.uid) {
@@ -76,10 +79,23 @@ fun MessagesPage(
         }
     }
 
+    LaunchedEffect(conversations, currentUser?.uid) {
+        val uid = currentUser?.uid ?: return@LaunchedEffect
+        val otherIds = conversations
+            .mapNotNull { conv -> conv.participants.firstOrNull { it != uid } }
+            .distinct()
+        if (otherIds.isNotEmpty()) {
+            freshPictures = try { repo.getUserProfilePictures(otherIds) } catch (_: Exception) { emptyMap() }
+        }
+    }
+
     LaunchedEffect(selectedTab, currentUser?.uid) {
         val uid = currentUser?.uid ?: return@LaunchedEffect
         when (selectedTab) {
-            1 -> groups = try { groupRepo.getGroupsForUser(uid) } catch (_: Exception) { emptyList() }
+            1 -> {
+                groups = try { groupRepo.getGroupsForUser(uid) } catch (_: Exception) { emptyList() }
+                pendingInvites = try { groupRepo.getPendingInvitesForUser(uid) } catch (_: Exception) { emptyList() }
+            }
             2 -> events = try { eventRepo.getEventsForUser(uid) } catch (_: Exception) { emptyList() }
         }
     }
@@ -141,7 +157,9 @@ fun MessagesPage(
                             items(conversations, key = { it.id }) { conv ->
                                 val otherId = conv.participants.firstOrNull { it != currentUser?.uid } ?: ""
                                 val otherNickname = conv.participantNicknames[otherId] ?: "Lietotājs"
-                                val otherPicture = conv.participantPictures[otherId]?.takeIf { it.isNotEmpty() }
+                                val otherPicture = freshPictures[otherId]
+                                    ?.takeIf { it.isNotEmpty() }
+                                    ?: conv.participantPictures[otherId]?.takeIf { it.isNotEmpty() }
                                 ConversationRow(
                                     nickname = otherNickname,
                                     picture = otherPicture,
@@ -165,7 +183,7 @@ fun MessagesPage(
                 }
 
                 1 -> {
-                    if (groups.isEmpty()) {
+                    if (groups.isEmpty() && pendingInvites.isEmpty()) {
                         Box(
                             modifier = Modifier.fillMaxSize().padding(bottom = 80.dp),
                             contentAlignment = Alignment.Center
@@ -181,6 +199,52 @@ fun MessagesPage(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 80.dp)
                         ) {
+                            if (pendingInvites.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        "Ielūgumi (${pendingInvites.size})",
+                                        color = textSecondary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                                    )
+                                }
+                                items(pendingInvites, key = { "invite_${it.id}" }) { group ->
+                                    GroupInviteRow(
+                                        group = group,
+                                        onAccept = {
+                                            val uid = currentUser?.uid ?: return@GroupInviteRow
+                                            scope.launch {
+                                                try {
+                                                    groupRepo.acceptInvite(group.id, uid)
+                                                    pendingInvites = pendingInvites.filter { it.id != group.id }
+                                                    groups = try { groupRepo.getGroupsForUser(uid) } catch (_: Exception) { groups }
+                                                } catch (_: Exception) {}
+                                            }
+                                        },
+                                        onDecline = {
+                                            val uid = currentUser?.uid ?: return@GroupInviteRow
+                                            scope.launch {
+                                                try {
+                                                    groupRepo.declineInvite(group.id, uid)
+                                                    pendingInvites = pendingInvites.filter { it.id != group.id }
+                                                } catch (_: Exception) {}
+                                            }
+                                        }
+                                    )
+                                }
+                                if (groups.isNotEmpty()) {
+                                    item {
+                                        Text(
+                                            "Manas grupas",
+                                            color = textSecondary,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                                        )
+                                    }
+                                }
+                            }
                             items(groups, key = { it.id }) { group ->
                                 GroupRow(
                                     group = group,
@@ -344,6 +408,54 @@ private fun GroupRow(group: Group, currentUserId: String?, onClick: () -> Unit) 
         }
     }
     HorizontalDivider(color = divColor, thickness = 0.5.dp, modifier = Modifier.padding(start = 84.dp))
+}
+
+@Composable
+private fun GroupInviteRow(group: Group, onAccept: () -> Unit, onDecline: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppColors.surface)
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (group.pictureUrl != null) {
+            Image(
+                painter = rememberAsyncImagePainter(group.pictureUrl),
+                contentDescription = null,
+                modifier = Modifier.size(48.dp).clip(CircleShape).background(AppColors.avatarPlaceholder),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = RyderAccent) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        group.name.take(1).uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(group.name, color = AppColors.textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+            Text("${group.memberIds.size} biedri", color = AppColors.textSecondary, fontSize = 12.sp)
+        }
+        Spacer(Modifier.width(8.dp))
+        TextButton(
+            onClick = onDecline,
+            colors = ButtonDefaults.textButtonColors(contentColor = AppColors.textSecondary)
+        ) { Text("Noraidīt", fontSize = 13.sp) }
+        Button(
+            onClick = onAccept,
+            colors = ButtonDefaults.buttonColors(containerColor = RyderAccent, contentColor = Color.White),
+            shape = RoundedCornerShape(8.dp),
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+        ) { Text("Pieņemt", fontSize = 13.sp) }
+    }
+    HorizontalDivider(color = AppColors.divider, thickness = 0.5.dp, modifier = Modifier.padding(start = 80.dp))
 }
 
 @Composable

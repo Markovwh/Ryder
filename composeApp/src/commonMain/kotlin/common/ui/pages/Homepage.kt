@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import common.data.PostRepository
+import common.data.UserRepository
 import common.model.Post
 import common.model.User
 import common.ui.pages.components.AppColors
@@ -27,10 +28,33 @@ fun Homepage(
     currentUser: User? = null
 ) {
     val repository = remember { PostRepository() }
+    val userRepo = remember { UserRepository() }
     var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
+    var followingIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var followerIds by remember { mutableStateOf<Set<String>>(emptySet()) }
 
-    LaunchedEffect(Unit) {
-        repository.listenToPosts { posts = it }
+    // Fetch who the current user follows and who follows them so the feed can
+    // apply "Privāts" / "Draugi" visibility rules correctly.
+    LaunchedEffect(currentUser?.uid) {
+        val uid = currentUser?.uid
+        if (uid != null) {
+            followingIds = currentUser.following.toSet()
+            try { followerIds = userRepo.getFollowerIds(uid) } catch (_: Exception) {}
+        } else {
+            followingIds = emptySet()
+            followerIds = emptySet()
+        }
+    }
+
+    // Re-subscribe whenever the viewer's relationship sets change so the feed
+    // immediately reflects new follows/unfollows.
+    DisposableEffect(currentUser?.uid, followingIds, followerIds) {
+        val unsub = repository.listenToPosts(
+            currentUserId = currentUser?.uid,
+            followingIds = followingIds,
+            followerIds = followerIds
+        ) { posts = it }
+        onDispose { unsub() }
     }
 
     Scaffold(containerColor = AppColors.background) { paddingValues ->

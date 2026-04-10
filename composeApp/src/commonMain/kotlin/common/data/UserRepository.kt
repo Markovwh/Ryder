@@ -47,6 +47,51 @@ class UserRepository {
         } catch (_: Exception) {}
     }
 
+    // ── Follow requests (for private profiles) ───────────────────────────────
+
+    suspend fun hasSentFollowRequest(requesterId: String, targetId: String): Boolean {
+        val doc = usersRef.document(targetId).get().await()
+        @Suppress("UNCHECKED_CAST")
+        val requests = doc.get("followRequests") as? List<String>
+        return requests?.contains(requesterId) == true
+    }
+
+    suspend fun sendFollowRequest(requesterId: String, targetId: String) {
+        usersRef.document(targetId).update(
+            "followRequests", FieldValue.arrayUnion(requesterId)
+        ).await()
+    }
+
+    suspend fun cancelFollowRequest(requesterId: String, targetId: String) {
+        usersRef.document(targetId).update(
+            "followRequests", FieldValue.arrayRemove(requesterId)
+        ).await()
+    }
+
+    suspend fun acceptFollowRequest(targetId: String, requesterId: String) {
+        // Perform the actual follow
+        follow(requesterId, targetId)
+        // Remove from pending requests
+        usersRef.document(targetId).update(
+            "followRequests", FieldValue.arrayRemove(requesterId)
+        ).await()
+    }
+
+    suspend fun declineFollowRequest(targetId: String, requesterId: String) {
+        usersRef.document(targetId).update(
+            "followRequests", FieldValue.arrayRemove(requesterId)
+        ).await()
+    }
+
+    suspend fun getFollowRequestUsers(userId: String): List<User> {
+        val doc = usersRef.document(userId).get().await()
+        @Suppress("UNCHECKED_CAST")
+        val ids = (doc.get("followRequests") as? List<String>) ?: return emptyList()
+        return ids.mapNotNull { id ->
+            try { usersRef.document(id).get().await().toObject(User::class.java) } catch (_: Exception) { null }
+        }
+    }
+
     // ── Block ─────────────────────────────────────────────────────────────────
 
     suspend fun isBlocked(currentUserId: String, targetUserId: String): Boolean =
@@ -88,5 +133,11 @@ class UserRepository {
         return ids.mapNotNull { id ->
             try { usersRef.document(id).get().await().toObject(User::class.java) } catch (_: Exception) { null }
         }
+    }
+
+    /** Returns the UIDs of every user who follows [userId]. */
+    suspend fun getFollowerIds(userId: String): Set<String> {
+        val snap = usersRef.whereArrayContains("following", userId).get().await()
+        return snap.documents.mapNotNull { it.getString("uid") }.toSet()
     }
 }

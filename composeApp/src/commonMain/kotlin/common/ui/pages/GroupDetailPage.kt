@@ -312,6 +312,7 @@ fun GroupDetailPage(
             repo = repo,
             currentUserId = currentUser?.uid ?: "",
             isOwner = isOwner,
+            isAdmin = isAdmin,
             onDismiss = { showMembersDialog = false },
             onChanged = { scope.launch { group = repo.getGroup(groupId) } }
         )
@@ -664,7 +665,7 @@ private fun InviteUserDialog(
 
     LaunchedEffect(query) {
         results = if (query.length >= 2) {
-            try { repo.searchUsers(query, group.memberIds + group.bannedIds) }
+            try { repo.searchUsers(query, group.memberIds + group.bannedIds + group.inviteIds) }
             catch (_: Exception) { emptyList() }
         } else emptyList()
     }
@@ -707,8 +708,8 @@ private fun InviteUserDialog(
                         .clickable {
                             scope.launch {
                                 try {
-                                    repo.addMember(group.id, user.uid)
-                                    successMsg = "${user.nickname} pievienots grupai"
+                                    repo.sendInvite(group.id, user.uid)
+                                    successMsg = "${user.nickname} saņēma ielūgumu"
                                     query = ""
                                     results = emptyList()
                                     onInvited()
@@ -758,6 +759,7 @@ private fun ManageMembersDialog(
     repo: GroupRepository,
     currentUserId: String,
     isOwner: Boolean,
+    isAdmin: Boolean,
     onDismiss: () -> Unit,
     onChanged: () -> Unit
 ) {
@@ -840,7 +842,11 @@ private fun ManageMembersDialog(
                                 fontSize = 12.sp
                             )
                         }
-                        if (isOwner && !isThisOwner && member.uid != currentUserId) {
+                        // Owner can manage everyone except themselves.
+                        // Admins can only manage regular members (not owner, not other admins, not themselves).
+                        val canManage = !isThisOwner && member.uid != currentUserId &&
+                            (isOwner || (isAdmin && !isMemberAdmin))
+                        if (canManage) {
                             Box {
                                 IconButton(onClick = { showMemberMenu = true }) {
                                     Icon(Icons.Default.MoreVert, contentDescription = null, tint = AppColors.textSecondary)
@@ -849,34 +855,36 @@ private fun ManageMembersDialog(
                                     expanded = showMemberMenu,
                                     onDismissRequest = { showMemberMenu = false }
                                 ) {
-                                    if (!isMemberAdmin) {
-                                        DropdownMenuItem(
-                                            text = { Text("Padarīt par administratoru") },
-                                            onClick = {
-                                                showMemberMenu = false
-                                                scope.launch {
-                                                    try {
-                                                        repo.makeAdmin(group.id, member.uid)
-                                                        localAdminIds = localAdminIds + member.uid
-                                                        onChanged()
-                                                    } catch (_: Exception) {}
+                                    if (isOwner) {
+                                        if (!isMemberAdmin) {
+                                            DropdownMenuItem(
+                                                text = { Text("Padarīt par administratoru") },
+                                                onClick = {
+                                                    showMemberMenu = false
+                                                    scope.launch {
+                                                        try {
+                                                            repo.makeAdmin(group.id, member.uid)
+                                                            localAdminIds = localAdminIds + member.uid
+                                                            onChanged()
+                                                        } catch (_: Exception) {}
+                                                    }
                                                 }
-                                            }
-                                        )
-                                    } else {
-                                        DropdownMenuItem(
-                                            text = { Text("Noņemt administratora tiesības") },
-                                            onClick = {
-                                                showMemberMenu = false
-                                                scope.launch {
-                                                    try {
-                                                        repo.removeAdmin(group.id, member.uid)
-                                                        localAdminIds = localAdminIds - member.uid
-                                                        onChanged()
-                                                    } catch (_: Exception) {}
+                                            )
+                                        } else {
+                                            DropdownMenuItem(
+                                                text = { Text("Noņemt administratora tiesības") },
+                                                onClick = {
+                                                    showMemberMenu = false
+                                                    scope.launch {
+                                                        try {
+                                                            repo.removeAdmin(group.id, member.uid)
+                                                            localAdminIds = localAdminIds - member.uid
+                                                            onChanged()
+                                                        } catch (_: Exception) {}
+                                                    }
                                                 }
-                                            }
-                                        )
+                                            )
+                                        }
                                     }
                                     DropdownMenuItem(
                                         text = { Text("Izmest no grupas", color = Color(0xFFE53935)) },

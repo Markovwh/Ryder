@@ -14,6 +14,7 @@ data class User(
     val followerCount: Int = 0,
     val followingCount: Int = 0,
     val following: List<String> = emptyList(), // UIDs of users this person follows
+    val followRequests: List<String> = emptyList(), // UIDs of users requesting to follow (private accounts)
     val isAdmin: Boolean = false,
     val experienceYears: Int = 0
 )

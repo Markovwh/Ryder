@@ -31,6 +31,7 @@ import coil.compose.rememberAsyncImagePainter
 import common.data.GroupRepository
 import common.model.Group
 import common.model.User
+import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
 import kotlinx.coroutines.launch
 
@@ -48,24 +49,31 @@ fun CreateGroupScreen(
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    val bg = AppColors.background
+    val surface = AppColors.surface
+    val textPrimary = AppColors.textPrimary
+    val textSecondary = AppColors.textSecondary
+    val inputBorder = AppColors.inputBorder
+    val textHint = AppColors.textHint
+
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { pictureUri = it }
     }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedTextColor = Color(0xFF1A1A1A),
-        unfocusedTextColor = Color(0xFF1A1A1A),
+        focusedTextColor = textPrimary,
+        unfocusedTextColor = textPrimary,
         focusedBorderColor = RyderAccent,
-        unfocusedBorderColor = Color(0xFF9E9E9E),
+        unfocusedBorderColor = inputBorder,
         focusedLabelColor = RyderAccent,
-        unfocusedLabelColor = Color(0xFF757575),
+        unfocusedLabelColor = textSecondary,
         cursorColor = RyderAccent
     )
 
     Scaffold(
-        containerColor = Color(0xFFEEEEEE),
+        containerColor = bg,
         topBar = {
-            Surface(color = Color(0xFFF5F5F5)) {
+            Surface(color = surface) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -74,11 +82,11 @@ fun CreateGroupScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.Default.Close, contentDescription = "Atcelt", tint = Color(0xFF1A1A1A))
+                        Icon(Icons.Default.Close, contentDescription = "Atcelt", tint = textPrimary)
                     }
                     Text(
                         "Izveidot grupu",
-                        color = Color(0xFF1A1A1A),
+                        color = textPrimary,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 17.sp,
                         modifier = Modifier.weight(1f)
@@ -112,7 +120,7 @@ fun CreateGroupScreen(
                     ) {
                         Text(
                             "Izveidot",
-                            color = if (!isLoading) RyderAccent else Color(0xFF9E9E9E),
+                            color = if (!isLoading) RyderAccent else textSecondary,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -123,6 +131,7 @@ fun CreateGroupScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(bg)
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 24.dp),
@@ -132,7 +141,7 @@ fun CreateGroupScreen(
                 modifier = Modifier
                     .size(96.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFD0D0D0))
+                    .background(AppColors.avatarPlaceholder)
                     .border(2.dp, RyderAccent, CircleShape)
                     .clickable { imagePicker.launch("image/*") },
                 contentAlignment = Alignment.Center
@@ -149,10 +158,10 @@ fun CreateGroupScreen(
                         Icon(
                             Icons.Default.CameraAlt,
                             contentDescription = null,
-                            tint = Color(0xFF757575),
+                            tint = textHint,
                             modifier = Modifier.size(28.dp)
                         )
-                        Text("Foto", color = Color(0xFF757575), fontSize = 12.sp)
+                        Text("Foto", color = textHint, fontSize = 12.sp)
                     }
                 }
             }
