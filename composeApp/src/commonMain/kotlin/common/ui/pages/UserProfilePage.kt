@@ -33,6 +33,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
 import common.data.MessageRepository
+import common.data.AdminRepository
 import common.data.PostRepository
 import common.data.UserRepository
 import common.model.Post
@@ -54,6 +55,7 @@ fun UserProfilePage(
     val postRepo = remember { PostRepository() }
     val userRepo = remember { UserRepository() }
     val msgRepo = remember { MessageRepository() }
+    val adminRepo = remember { AdminRepository() }
     val scope = rememberCoroutineScope()
 
     var user by remember { mutableStateOf<User?>(null) }
@@ -67,6 +69,7 @@ fun UserProfilePage(
     var selectedPost by remember { mutableStateOf<Post?>(null) }
     var showMenu by remember { mutableStateOf(false) }
     var showBlockConfirm by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
     var showFollowList by remember { mutableStateOf<FollowListType?>(null) }
 
     val bg = AppColors.background
@@ -157,6 +160,10 @@ fun UserProfilePage(
                                             showBlockConfirm = true
                                         }
                                     }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Ziņot") },
+                                    onClick = { showMenu = false; showReportDialog = true }
                                 )
                             }
                         }
@@ -450,6 +457,49 @@ fun UserProfilePage(
             },
             dismissButton = {
                 TextButton(onClick = { showBlockConfirm = false }) { Text("Atcelt", color = AppColors.textSecondary) }
+            }
+        )
+    }
+
+    // ── Report user dialog ────────────────────────────────────────────────────
+    if (showReportDialog && currentUser != null) {
+        val reasons = listOf("Surogātpasts", "Nepiedienīgs saturs", "Uzmākšanās", "Viltus informācija", "Naida runa", "Cits")
+        AlertDialog(
+            onDismissRequest = { showReportDialog = false },
+            containerColor = AppColors.surface,
+            title = { Text("Ziņot par lietotāju", color = AppColors.textPrimary) },
+            text = {
+                Column {
+                    reasons.forEach { reason ->
+                        TextButton(
+                            onClick = {
+                                showReportDialog = false
+                                scope.launch {
+                                    try {
+                                        adminRepo.submitReport(
+                                            targetId = userId,
+                                            targetType = "user",
+                                            targetOwnerNickname = user?.nickname ?: "",
+                                            reporterId = currentUser.uid,
+                                            reporterNickname = currentUser.nickname,
+                                            reason = reason
+                                        )
+                                    } catch (_: Exception) {}
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(reason, color = AppColors.textPrimary, modifier = Modifier.fillMaxWidth())
+                        }
+                        HorizontalDivider(color = AppColors.divider)
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showReportDialog = false }) {
+                    Text("Atcelt", color = AppColors.textSecondary)
+                }
             }
         )
     }
