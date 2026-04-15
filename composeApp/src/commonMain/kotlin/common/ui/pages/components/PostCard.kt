@@ -253,7 +253,15 @@ fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
                 showReportDialog = false
                 val uid = currentUser?.uid ?: return@ReportDialog
                 scope.launch {
-                    try { repository.reportPost(post.id, uid, reason) } catch (_: Exception) {}
+                    try {
+                        repository.reportPost(
+                            postId = post.id,
+                            reporterId = uid,
+                            reporterNickname = currentUser?.nickname ?: "",
+                            targetOwnerNickname = post.user.nickname,
+                            reason = reason
+                        )
+                    } catch (_: Exception) {}
                 }
             }
         )
@@ -405,8 +413,10 @@ private fun CommentsSheet(
     var comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
     var commentText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
+    var reportingComment by remember { mutableStateOf<Comment?>(null) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    val adminRepo = remember { common.data.AdminRepository() }
 
     LaunchedEffect(post.id) {
         isLoading = true
@@ -458,16 +468,37 @@ private fun CommentsSheet(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(comments) { comment ->
-                        Column(modifier = Modifier.padding(vertical = 6.dp)) {
-                            Text(
-                                text = comment.nickname,
-                                color = RyderAccent,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp
-                            )
-                            Text(text = comment.text, color = textPrimary, fontSize = 14.sp)
-                            HorizontalDivider(color = divColor, modifier = Modifier.padding(top = 6.dp))
+                        val isOwnComment = currentUser?.uid == comment.userId
+                        Row(verticalAlignment = Alignment.Top) {
+                            Column(modifier = Modifier.weight(1f).padding(vertical = 6.dp)) {
+                                Text(
+                                    text = comment.nickname,
+                                    color = RyderAccent,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.sp
+                                )
+                                Text(text = comment.text, color = textPrimary, fontSize = 14.sp)
+                            }
+                            if (currentUser != null && !isOwnComment) {
+                                Box {
+                                    var menuExpanded by remember { mutableStateOf(false) }
+                                    IconButton(
+                                        onClick = { menuExpanded = true },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(Icons.Default.MoreVert, null, tint = textSecondary, modifier = Modifier.size(16.dp))
+                                    }
+                                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false },
+                                        containerColor = AppColors.surface) {
+                                        DropdownMenuItem(
+                                            text = { Text("Ziņot", color = textPrimary) },
+                                            onClick = { menuExpanded = false; reportingComment = comment }
+                                        )
+                                    }
+                                }
+                            }
                         }
+                        HorizontalDivider(color = divColor)
                     }
                 }
             }
@@ -531,6 +562,50 @@ private fun CommentsSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    reportingComment?.let { comment ->
+        val reasons = listOf("Surogātpasts", "Nepiedienīgs saturs", "Uzmākšanās", "Viltus informācija", "Cits")
+        AlertDialog(
+            onDismissRequest = { reportingComment = null },
+            containerColor = AppColors.surface,
+            title = { Text("Ziņot par komentāru", color = AppColors.textPrimary) },
+            text = {
+                Column {
+                    reasons.forEach { reason ->
+                        TextButton(
+                            onClick = {
+                                reportingComment = null
+                                val reporter = currentUser ?: return@TextButton
+                                scope.launch {
+                                    try {
+                                        adminRepo.submitReport(
+                                            targetId = comment.id,
+                                            targetType = "comment",
+                                            targetOwnerNickname = comment.nickname,
+                                            reporterId = reporter.uid,
+                                            reporterNickname = reporter.nickname,
+                                            reason = reason,
+                                            description = comment.text
+                                        )
+                                    } catch (_: Exception) {}
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(reason, color = AppColors.textPrimary, modifier = Modifier.fillMaxWidth())
+                        }
+                        HorizontalDivider(color = AppColors.divider)
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { reportingComment = null }) {
+                    Text("Atcelt", color = AppColors.textSecondary)
+                }
+            }
+        )
     }
 }
 

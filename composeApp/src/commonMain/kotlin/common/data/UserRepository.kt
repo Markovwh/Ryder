@@ -130,9 +130,30 @@ class UserRepository {
         val doc = usersRef.document(userId).get().await()
         @Suppress("UNCHECKED_CAST")
         val ids = (doc.get("following") as? List<String>) ?: return emptyList()
-        return ids.mapNotNull { id ->
-            try { usersRef.document(id).get().await().toObject(User::class.java) } catch (_: Exception) { null }
+
+        val deadIds = mutableListOf<String>()
+        val users = ids.mapNotNull { id ->
+            val fetched = try { usersRef.document(id).get().await() } catch (_: Exception) { null }
+            if (fetched == null || !fetched.exists()) {
+                deadIds.add(id)
+                null
+            } else {
+                try { fetched.toObject(User::class.java) } catch (_: Exception) { null }
+            }
         }
+
+        // Prune dead UIDs from the following array and fix the stored count
+        if (deadIds.isNotEmpty()) {
+            val ref = usersRef.document(userId)
+            deadIds.forEach { deadId ->
+                try { ref.update("following", FieldValue.arrayRemove(deadId)).await() } catch (_: Exception) {}
+            }
+            try {
+                ref.update("followingCount", (ids.size - deadIds.size).coerceAtLeast(0)).await()
+            } catch (_: Exception) {}
+        }
+
+        return users
     }
 
     /** Returns the UIDs of every user who follows [userId]. */

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
+import common.data.AdminRepository
 import common.data.PostRepository
 import common.model.Comment
 import common.model.Post
@@ -49,6 +50,7 @@ fun PostDetailDialog(
     onDeleted: (() -> Unit)? = null
 ) {
     val repository = remember { PostRepository() }
+    val adminRepo = remember { AdminRepository() }
     var isLiked by remember { mutableStateOf(false) }
     var likeCount by remember { mutableStateOf(post.likeCount) }
     var comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
@@ -56,6 +58,7 @@ fun PostDetailDialog(
     var isLoadingComments by remember { mutableStateOf(true) }
     var showMenu by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
+    var reportingComment by remember { mutableStateOf<Comment?>(null) }
     var showShareOptions by remember { mutableStateOf(false) }
     var showShareToUser by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -317,26 +320,46 @@ fun PostDetailDialog(
                         }
                     } else {
                         items(comments) { comment ->
-                            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = comment.nickname,
-                                        color = RyderAccent,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 13.sp
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = PostCardTimeFormatter.formatTimeAgo(comment.createdAt),
-                                        color = textSecondary,
-                                        fontSize = 10.sp
-                                    )
+                            val isOwnComment = currentUser?.uid == comment.userId
+                            Row(
+                                modifier = Modifier.padding(start = 14.dp, end = 4.dp, top = 5.dp, bottom = 5.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = comment.nickname,
+                                            color = RyderAccent,
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 13.sp
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = PostCardTimeFormatter.formatTimeAgo(comment.createdAt),
+                                            color = textSecondary,
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                    Text(text = comment.text, color = textPrimary, fontSize = 14.sp)
                                 }
-                                Text(
-                                    text = comment.text,
-                                    color = textPrimary,
-                                    fontSize = 14.sp
-                                )
+                                if (currentUser != null && !isOwnComment) {
+                                    Box {
+                                        var menuExpanded by remember { mutableStateOf(false) }
+                                        IconButton(
+                                            onClick = { menuExpanded = true },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(Icons.Default.MoreVert, null, tint = textSecondary, modifier = Modifier.size(15.dp))
+                                        }
+                                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false },
+                                            containerColor = AppColors.surface) {
+                                            DropdownMenuItem(
+                                                text = { Text("Ziņot", color = textPrimary) },
+                                                onClick = { menuExpanded = false; reportingComment = comment }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             HorizontalDivider(
                                 color = divider,
@@ -430,7 +453,15 @@ fun PostDetailDialog(
                                 showReportDialog = false
                                 val uid = currentUser?.uid ?: return@TextButton
                                 scope.launch {
-                                    try { repository.reportPost(post.id, uid, reason) } catch (_: Exception) {}
+                                    try {
+                                        repository.reportPost(
+                                            postId = post.id,
+                                            reporterId = uid,
+                                            reporterNickname = currentUser?.nickname ?: "",
+                                            targetOwnerNickname = post.user.nickname,
+                                            reason = reason
+                                        )
+                                    } catch (_: Exception) {}
                                 }
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -444,6 +475,50 @@ fun PostDetailDialog(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showReportDialog = false }) {
+                    Text("Atcelt", color = AppColors.textSecondary)
+                }
+            }
+        )
+    }
+
+    reportingComment?.let { comment ->
+        val reasons = listOf("Surogātpasts", "Nepiedienīgs saturs", "Uzmākšanās", "Viltus informācija", "Cits")
+        AlertDialog(
+            onDismissRequest = { reportingComment = null },
+            containerColor = AppColors.surface,
+            title = { Text("Ziņot par komentāru", color = AppColors.textPrimary) },
+            text = {
+                Column {
+                    reasons.forEach { reason ->
+                        TextButton(
+                            onClick = {
+                                reportingComment = null
+                                val reporter = currentUser ?: return@TextButton
+                                scope.launch {
+                                    try {
+                                        adminRepo.submitReport(
+                                            targetId = comment.id,
+                                            targetType = "comment",
+                                            targetOwnerNickname = comment.nickname,
+                                            reporterId = reporter.uid,
+                                            reporterNickname = reporter.nickname,
+                                            reason = reason,
+                                            description = comment.text
+                                        )
+                                    } catch (_: Exception) {}
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(reason, color = AppColors.textPrimary, modifier = Modifier.fillMaxWidth())
+                        }
+                        HorizontalDivider(color = AppColors.divider)
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { reportingComment = null }) {
                     Text("Atcelt", color = AppColors.textSecondary)
                 }
             }

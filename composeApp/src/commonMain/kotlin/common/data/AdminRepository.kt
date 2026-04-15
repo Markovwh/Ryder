@@ -1,5 +1,6 @@
 package common.data
 
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import common.model.Event
 import common.model.Group
@@ -30,6 +31,68 @@ class AdminRepository {
     }
 
     suspend fun deleteUser(userId: String) {
+        // Delete all posts by this user (and their likes)
+        val userPosts = postsRef.whereEqualTo("userId", userId).get().await()
+        userPosts.documents.forEach { postDoc ->
+            val likes = likesRef.whereEqualTo("postId", postDoc.id).get().await()
+            likes.documents.forEach { it.reference.delete().await() }
+            postDoc.reference.delete().await()
+        }
+        // Delete all groups created by this user
+        val userGroups = groupsRef.whereEqualTo("ownerId", userId).get().await()
+        userGroups.documents.forEach { groupDoc ->
+            val groupPosts = postsRef.whereEqualTo("groupId", groupDoc.id).get().await()
+            groupPosts.documents.forEach { postDoc ->
+                val likes = likesRef.whereEqualTo("postId", postDoc.id).get().await()
+                likes.documents.forEach { it.reference.delete().await() }
+                postDoc.reference.delete().await()
+            }
+            groupDoc.reference.delete().await()
+        }
+        // Delete all events created by this user
+        val userEvents = eventsRef.whereEqualTo("creatorId", userId).get().await()
+        userEvents.documents.forEach { it.reference.delete().await() }
+
+        // Fix follow counts:
+        // 1. Users who follow the deleted user — remove from their `following` list and decrement their followingCount
+        val followers = usersRef.whereArrayContains("following", userId).get().await()
+        followers.documents.forEach { followerDoc ->
+            followerDoc.reference.update(
+                "following", FieldValue.arrayRemove(userId),
+                "followingCount", FieldValue.increment(-1)
+            ).await()
+        }
+        // 2. Users the deleted user was following — decrement their followerCount
+        val deletedUserDoc = usersRef.document(userId).get().await()
+        @Suppress("UNCHECKED_CAST")
+        val followingIds = deletedUserDoc.get("following") as? List<String> ?: emptyList()
+        followingIds.forEach { followedId ->
+            try {
+                usersRef.document(followedId).update("followerCount", FieldValue.increment(-1)).await()
+            } catch (_: Exception) {}
+        }
+        // 3. Remove the deleted user from any pending followRequests on other users' documents
+        val pendingRequests = usersRef.whereArrayContains("followRequests", userId).get().await()
+        pendingRequests.documents.forEach { doc ->
+            doc.reference.update("followRequests", FieldValue.arrayRemove(userId)).await()
+        }
+
+        // 4. Remove deleted user from groups they were a member/admin of (but didn't own)
+        val groupMemberships = groupsRef.whereArrayContains("memberIds", userId).get().await()
+        groupMemberships.documents.forEach { doc ->
+            doc.reference.update(
+                "memberIds", FieldValue.arrayRemove(userId),
+                "adminIds", FieldValue.arrayRemove(userId)
+            ).await()
+        }
+
+        // 5. Remove deleted user from events they were attending (but didn't create)
+        val eventAttendances = eventsRef.whereArrayContains("attendeeIds", userId).get().await()
+        eventAttendances.documents.forEach { doc ->
+            doc.reference.update("attendeeIds", FieldValue.arrayRemove(userId)).await()
+        }
+
+        // Delete the user document itself
         usersRef.document(userId).delete().await()
     }
 

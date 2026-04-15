@@ -251,13 +251,23 @@ class PostRepository {
 
     // ── Reports ───────────────────────────────────────────────────────────────
 
-    suspend fun reportPost(postId: String, reporterId: String, reason: String) {
+    suspend fun reportPost(
+        postId: String,
+        reporterId: String,
+        reporterNickname: String,
+        targetOwnerNickname: String,
+        reason: String
+    ) {
         reportsRef.add(
             mapOf(
-                "postId" to postId,
+                "targetId" to postId,
+                "targetType" to "post",
+                "targetOwnerNickname" to targetOwnerNickname,
                 "reporterId" to reporterId,
+                "reporterNickname" to reporterNickname,
                 "reason" to reason,
-                "createdAt" to System.currentTimeMillis()
+                "createdAt" to System.currentTimeMillis(),
+                "status" to "pending"
             )
         ).await()
     }
