@@ -2,7 +2,6 @@
 
 package common.ui.pages.components
 
-import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,7 +24,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -59,7 +57,6 @@ fun PostDetailDialog(
     var showMenu by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
     var reportingComment by remember { mutableStateOf<Comment?>(null) }
-    var showShareOptions by remember { mutableStateOf(false) }
     var showShareToUser by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
@@ -67,7 +64,6 @@ fun PostDetailDialog(
     val isOwner = currentUser?.uid == post.userId
 
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
     val listState = rememberLazyListState()
 
     val surface = AppColors.surface
@@ -258,23 +254,7 @@ fun PostDetailDialog(
                                 tint = textSecondary,
                                 label = ""
                             ) {
-                                if (currentUser != null) {
-                                    showShareOptions = true
-                                } else {
-                                    val text = buildString {
-                                        if (post.description.isNotEmpty()) append(post.description).append("\n")
-                                        append("Apskatiet Ryder lietotnē!")
-                                    }
-                                    context.startActivity(
-                                        Intent.createChooser(
-                                            Intent(Intent.ACTION_SEND).apply {
-                                                type = "text/plain"
-                                                putExtra(Intent.EXTRA_TEXT, text)
-                                            },
-                                            "Dalīties"
-                                        )
-                                    )
-                                }
+                                if (currentUser != null) showShareToUser = true
                             }
                         }
                         HorizontalDivider(color = divider, modifier = Modifier.padding(horizontal = 8.dp))
@@ -521,49 +501,6 @@ fun PostDetailDialog(
                 TextButton(onClick = { reportingComment = null }) {
                     Text("Atcelt", color = AppColors.textSecondary)
                 }
-            }
-        )
-    }
-
-    if (showShareOptions) {
-        val shareText = buildString {
-            if (post.description.isNotEmpty()) append(post.description).append("\n")
-            append("Apskatiet Ryder lietotnē!")
-        }
-        val dialogSurface = AppColors.surface
-        val dialogTextPrimary = AppColors.textPrimary
-        val dialogDivider = AppColors.divider
-        AlertDialog(
-            onDismissRequest = { showShareOptions = false },
-            containerColor = dialogSurface,
-            title = { Text("Dalīties", color = dialogTextPrimary) },
-            text = {
-                Column {
-                    TextButton(
-                        onClick = {
-                            showShareOptions = false
-                            context.startActivity(
-                                Intent.createChooser(
-                                    Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, shareText)
-                                    },
-                                    "Dalīties"
-                                )
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Dalīties ārēji", color = dialogTextPrimary, modifier = Modifier.fillMaxWidth()) }
-                    HorizontalDivider(color = dialogDivider)
-                    TextButton(
-                        onClick = { showShareOptions = false; showShareToUser = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Sūtīt draugam", color = dialogTextPrimary, modifier = Modifier.fillMaxWidth()) }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showShareOptions = false }) { Text("Atcelt", color = AppColors.textSecondary) }
             }
         )
     }

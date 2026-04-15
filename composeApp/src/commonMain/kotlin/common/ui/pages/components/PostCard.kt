@@ -2,7 +2,6 @@
 
 package common.ui.pages.components
 
-import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +39,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+
+
 
 private val HeartRed = Color(0xFFE53935)
 
@@ -56,7 +56,6 @@ fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
     var showComments by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
-    var showShareOptions by remember { mutableStateOf(false) }
     var showShareToUser by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
@@ -65,7 +64,6 @@ fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
     val isOwner = currentUser?.uid == post.userId
     val repository = remember { PostRepository() }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     LaunchedEffect(post.id, currentUser?.uid) {
         val uid = currentUser?.uid ?: return@LaunchedEffect
@@ -215,23 +213,7 @@ fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
                     tint = textSecondary,
                     label = ""
                 ) {
-                    if (currentUser != null) {
-                        showShareOptions = true
-                    } else {
-                        val shareText = buildString {
-                            if (post.description.isNotEmpty()) append(post.description).append("\n")
-                            append("Apskatiet Ryder lietotnē!")
-                        }
-                        context.startActivity(
-                            Intent.createChooser(
-                                Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, shareText)
-                                },
-                                "Dalīties"
-                            )
-                        )
-                    }
+                    if (currentUser != null) showShareToUser = true
                 }
             }
         }
@@ -263,46 +245,6 @@ fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
                         )
                     } catch (_: Exception) {}
                 }
-            }
-        )
-    }
-
-    if (showShareOptions) {
-        val shareText = buildString {
-            if (post.description.isNotEmpty()) append(post.description).append("\n")
-            append("Apskatiet Ryder lietotnē!")
-        }
-        AlertDialog(
-            onDismissRequest = { showShareOptions = false },
-            containerColor = cardBg,
-            title = { Text("Dalīties", color = textPrimary) },
-            text = {
-                Column {
-                    TextButton(
-                        onClick = {
-                            showShareOptions = false
-                            context.startActivity(
-                                Intent.createChooser(
-                                    Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, shareText)
-                                    },
-                                    "Dalīties"
-                                )
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Dalīties ārēji", color = textPrimary, modifier = Modifier.fillMaxWidth()) }
-                    HorizontalDivider(color = divColor)
-                    TextButton(
-                        onClick = { showShareOptions = false; showShareToUser = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Sūtīt draugam", color = textPrimary, modifier = Modifier.fillMaxWidth()) }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showShareOptions = false }) { Text("Atcelt", color = textSecondary) }
             }
         )
     }
