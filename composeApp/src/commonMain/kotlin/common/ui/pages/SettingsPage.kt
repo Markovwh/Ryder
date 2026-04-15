@@ -6,12 +6,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,24 +20,33 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import common.data.AdminRepository
 import common.data.AuthService
+import common.model.User
 import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsPage(
     authService: AuthService,
+    currentUser: User?,
     isDarkTheme: Boolean,
     onToggleDarkTheme: (Boolean) -> Unit,
     onEditProfile: () -> Unit,
     onLogout: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenAdmin: (() -> Unit)? = null,
+    onAdminGranted: () -> Unit = {}
 ) {
     val bg = AppColors.background
     val surface = AppColors.surface
     val textPrimary = AppColors.textPrimary
     val textSecondary = AppColors.textSecondary
     val dividerColor = AppColors.divider
+    val scope = rememberCoroutineScope()
+    val adminRepo = remember { AdminRepository() }
+    var adminGranted by remember { mutableStateOf(currentUser?.isAdmin == true) }
 
     Column(modifier = Modifier.fillMaxSize().background(bg)) {
         TopAppBar(
@@ -107,6 +117,49 @@ fun SettingsPage(
                     )
                 )
             }
+        }
+
+        // Admin section (visible to admins only)
+        if ((currentUser?.isAdmin == true || adminGranted) && onOpenAdmin != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingsSectionHeader(text = "Administrācija", textColor = textSecondary)
+
+            Column(modifier = Modifier.fillMaxWidth().background(surface)) {
+                SettingsRow(
+                    icon = Icons.Default.AdminPanelSettings,
+                    label = "Administratora panelis",
+                    textColor = textPrimary,
+                    iconColor = RyderAccent,
+                    onClick = onOpenAdmin
+                )
+            }
+        }
+
+        // TEMPORARY: Dev section
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SettingsSectionHeader(text = "Izstrādātājs (pagaidu)", textColor = textSecondary)
+
+        Column(modifier = Modifier.fillMaxWidth().background(surface)) {
+            SettingsRow(
+                icon = Icons.Default.AdminPanelSettings,
+                label = if (adminGranted) "Administrators (piešķirts)" else "Piešķirt administratora tiesības",
+                textColor = if (adminGranted) textSecondary else textPrimary,
+                iconColor = RyderAccent,
+                onClick = {
+                    if (!adminGranted) {
+                        val uid = currentUser?.uid ?: return@SettingsRow
+                        scope.launch {
+                            try {
+                                adminRepo.setUserAdmin(uid, true)
+                                adminGranted = true
+                                onAdminGranted()
+                            } catch (_: Exception) {}
+                        }
+                    }
+                }
+            )
         }
     }
 }

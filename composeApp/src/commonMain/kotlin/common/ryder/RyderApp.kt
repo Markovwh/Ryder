@@ -29,7 +29,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
     var currentUser by remember { mutableStateOf<User?>(null) }
     var isDarkTheme by remember { mutableStateOf(false) }
 
-    // Back stack — push before every forward navigation, pop on back
+    // Back stack — returns to the last screen
     val backStack = remember { mutableStateListOf<Screen>() }
 
     fun navigateTo(screen: Screen) {
@@ -315,6 +315,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     if (!isGuest && authService.getCurrentUserId() != null) {
                         SettingsPage(
                             authService = authService,
+                            currentUser = currentUser,
                             isDarkTheme = isDarkTheme,
                             onToggleDarkTheme = { dark: Boolean ->
                                 isDarkTheme = dark
@@ -328,7 +329,11 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                                 isDarkTheme = false
                                 navigateRoot(Screen.Login)
                             },
-                            onBack = { navigateBack() }
+                            onBack = { navigateBack() },
+                            onOpenAdmin = { navigateTo(Screen.Admin) },
+                            onAdminGranted = {
+                                scope.launch { loadCurrentUser() }
+                            }
                         )
                     } else {
                         navigateRoot(Screen.Login)
@@ -338,8 +343,11 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                 Screen.Admin -> {
                     if (!isGuest && currentUser?.isAdmin == true) {
                         AdminPage(
-                            currentUser = currentUser,
-                            onBack = { navigateBack() }
+                            currentUser  = currentUser,
+                            onBack       = { navigateBack() },
+                            onOpenUser   = { userId  -> navigateTo(Screen.UserProfile(userId, "")) },
+                            onOpenGroup  = { groupId -> navigateTo(Screen.GroupDetail(groupId)) },
+                            onOpenEvent  = { eventId -> navigateTo(Screen.EventDetail(eventId)) }
                         )
                     } else {
                         navigateRoot(Screen.Profile)

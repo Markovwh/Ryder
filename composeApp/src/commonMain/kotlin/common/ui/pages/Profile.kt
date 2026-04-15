@@ -62,6 +62,7 @@ fun ProfilePage(
     var selectedPost by remember { mutableStateOf<Post?>(null) }
     var showFollowList by remember { mutableStateOf<FollowListType?>(null) }
     var followRequestUsers by remember { mutableStateOf<List<User>>(emptyList()) }
+    var followerCount by remember { mutableStateOf(0) }
     val repository = remember { PostRepository() }
     val userRepo = remember { UserRepository() }
 
@@ -75,6 +76,8 @@ fun ProfilePage(
                 onUserRefreshed?.invoke(fresh)
             }
         }
+        // Fetch actual follower count from database
+        try { followerCount = userRepo.getFollowerCount(uid) } catch (_: Exception) {}
         isLoadingPosts = true
         try { posts = repository.getPostsByUser(uid) } catch (_: Exception) {}
         isLoadingPosts = false
@@ -88,7 +91,7 @@ fun ProfilePage(
             title = { Text(user?.nickname ?: "Profils", color = textPrimary) },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = surface),
             actions = {
-                if (user?.isAdmin == true && onOpenAdmin != null) {
+                if ((initialUser?.isAdmin == true || user?.isAdmin == true) && onOpenAdmin != null) {
                     IconButton(onClick = onOpenAdmin) {
                         Icon(
                             Icons.Default.AdminPanelSettings,
@@ -193,7 +196,7 @@ fun ProfilePage(
                             label = "Ziņas"
                         )
                         ProfileStat(
-                            count = (user?.followerCount ?: 0).toString(),
+                            count = followerCount.toString(),
                             label = "Sekotāji",
                             onClick = { showFollowList = FollowListType.FOLLOWERS }
                         )
