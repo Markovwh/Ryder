@@ -48,11 +48,22 @@ class AuthServiceImplAndroid : AuthService {
 
         } catch (e: FirebaseAuthException) {
 
-            val message = when (e.errorCode) {
-                "ERROR_EMAIL_ALREADY_IN_USE" -> "Šis e-pasts jau ir reģistrēts"
-                "ERROR_WEAK_PASSWORD" -> "Parole ir pārāk vāja"
-                "ERROR_INVALID_EMAIL" -> "Nederīgs e-pasta formāts"
-                else -> "Reģistrācija neizdevās"
+            val message = if (e.errorCode == "ERROR_EMAIL_ALREADY_IN_USE") {
+                // Check whether a Firestore doc exists — if not, the account was deleted by an admin
+                val existingDoc = try {
+                    firestore.collection("users").whereEqualTo("email", email).get().await()
+                } catch (_: Exception) { null }
+                if (existingDoc != null && existingDoc.isEmpty) {
+                    "Šis e-pasts nav pieejams reģistrācijai."
+                } else {
+                    "Šis e-pasts jau ir reģistrēts"
+                }
+            } else {
+                when (e.errorCode) {
+                    "ERROR_WEAK_PASSWORD" -> "Parole ir pārāk vāja"
+                    "ERROR_INVALID_EMAIL" -> "Nederīgs e-pasta formāts"
+                    else -> "Reģistrācija neizdevās"
+                }
             }
 
             Result.failure(Exception(message))
@@ -68,7 +79,24 @@ class AuthServiceImplAndroid : AuthService {
     ): Result<Unit> {
         return try {
 
-            auth.signInWithEmailAndPassword(email, password).await()
+            val authResult = auth.signInWithEmailAndPassword(email, password).await()
+            val uid = authResult.user?.uid
+                ?: return Result.failure(Exception("Lietotāja ID nav atrasts"))
+
+            // Verify the Firestore user document still exists (guards against deleted accounts)
+            val userDoc = firestore.collection("users").document(uid).get().await()
+            if (!userDoc.exists()) {
+                auth.signOut()
+                return Result.failure(Exception("Šis konts ir dzēsts. Lūdzu, reģistrējieties ar jaunu kontu."))
+            }
+
+            // Also block banned users from logging in
+            val isBanned = userDoc.getBoolean("isBanned") ?: false
+            if (isBanned) {
+                auth.signOut()
+                return Result.failure(Exception("Šis konts ir bloķēts."))
+            }
+
             Result.success(Unit)
 
         } catch (e: FirebaseAuthException) {

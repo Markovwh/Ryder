@@ -2,11 +2,14 @@
 
 package common.ui.pages
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,11 +18,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import common.data.AdminRepository
 import common.model.Event
 import common.model.Group
@@ -82,6 +88,8 @@ fun AdminPage(
     var resolveReportTarget  by remember { mutableStateOf<Report?>(null) }
     var dismissReportTarget  by remember { mutableStateOf<Report?>(null) }
     var deleteFromReport     by remember { mutableStateOf<Report?>(null) }
+    var viewingPost          by remember { mutableStateOf<Post?>(null) }
+    var viewingReport        by remember { mutableStateOf<Report?>(null) }
 
     // Load all the counts of users, posts, groups, events and reports so stats are always accurate across the admin panel
     fun reloadAll() {
@@ -187,8 +195,10 @@ fun AdminPage(
 
                 // Users admin tab
                 AdminTab.USERS -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 80.dp)) {
-                    val banned = users.filter { it.isBanned }
-                    val active = users.filter { !it.isBanned }
+                    val banned  = users.filter { it.isBanned }
+                    val admins  = users.filter { !it.isBanned && it.isAdmin }
+                    val regular = users.filter { !it.isBanned && !it.isAdmin }
+
                     if (banned.isNotEmpty()) {
                         item { AdminSectionHeader("Bloķēti (${banned.size})", AdminRed, bg) }
                         items(banned, key = { "b_${it.uid}" }) { u ->
@@ -210,26 +220,50 @@ fun AdminPage(
                             )
                             HorizontalDivider(color = divider)
                         }
-                        item { AdminSectionHeader("Aktīvi (${active.size})", textSec, bg) }
                     }
-                    items(active, key = { it.uid }) { u ->
-                        AdminUserRow(
-                            user = u, isCurrentUser = u.uid == currentUser?.uid,
-                            surface = surface, textPrimary = textPrimary, textSec = textSec, divider = divider,
-                            onView        = { onOpenUser(u.uid) },
-                            onEdit        = { editingUser = u },
-                            onDelete      = { deleteUserTarget = u },
-                            onToggleAdmin = {
-                                scope.launch {
-                                    try {
-                                        repo.setUserAdmin(u.uid, !u.isAdmin)
-                                        users = users.map { if (it.uid == u.uid) it.copy(isAdmin = !it.isAdmin) else it }
-                                    } catch (e: Exception) { errorMsg = e.message }
-                                }
-                            },
-                            onToggleBan = { banUserTarget = u }
-                        )
-                        HorizontalDivider(color = divider)
+                    if (admins.isNotEmpty()) {
+                        item { AdminSectionHeader("Administratori (${admins.size})", AdminGreen, bg) }
+                        items(admins, key = { "a_${it.uid}" }) { u ->
+                            AdminUserRow(
+                                user = u, isCurrentUser = u.uid == currentUser?.uid,
+                                surface = surface, textPrimary = textPrimary, textSec = textSec, divider = divider,
+                                onView        = { onOpenUser(u.uid) },
+                                onEdit        = { editingUser = u },
+                                onDelete      = { deleteUserTarget = u },
+                                onToggleAdmin = {
+                                    scope.launch {
+                                        try {
+                                            repo.setUserAdmin(u.uid, !u.isAdmin)
+                                            users = users.map { if (it.uid == u.uid) it.copy(isAdmin = !it.isAdmin) else it }
+                                        } catch (e: Exception) { errorMsg = e.message }
+                                    }
+                                },
+                                onToggleBan = { banUserTarget = u }
+                            )
+                            HorizontalDivider(color = divider)
+                        }
+                    }
+                    if (regular.isNotEmpty()) {
+                        item { AdminSectionHeader("Lietotāji (${regular.size})", textSec, bg) }
+                        items(regular, key = { it.uid }) { u ->
+                            AdminUserRow(
+                                user = u, isCurrentUser = u.uid == currentUser?.uid,
+                                surface = surface, textPrimary = textPrimary, textSec = textSec, divider = divider,
+                                onView        = { onOpenUser(u.uid) },
+                                onEdit        = { editingUser = u },
+                                onDelete      = { deleteUserTarget = u },
+                                onToggleAdmin = {
+                                    scope.launch {
+                                        try {
+                                            repo.setUserAdmin(u.uid, !u.isAdmin)
+                                            users = users.map { if (it.uid == u.uid) it.copy(isAdmin = !it.isAdmin) else it }
+                                        } catch (e: Exception) { errorMsg = e.message }
+                                    }
+                                },
+                                onToggleBan = { banUserTarget = u }
+                            )
+                            HorizontalDivider(color = divider)
+                        }
                     }
                 }
 
@@ -242,6 +276,7 @@ fun AdminPage(
                             AdminPostRow(
                                 post = post,
                                 surface = surface, textPrimary = textPrimary, textSec = textSec,
+                                onClick    = { viewingPost = post },
                                 onViewUser = { onOpenUser(post.userId) },
                                 onDelete   = { deletePostTarget = post }
                             )
@@ -298,12 +333,13 @@ fun AdminPage(
                                     report = report,
                                     users = users, posts = posts, groups = groups, events = events,
                                     surface = surface, textPrimary = textPrimary, textSec = textSec,
+                                    onClick = { viewingReport = report },
                                     onNavigate = {
                                         when (report.targetType) {
                                             "user"  -> onOpenUser(report.targetId)
                                             "group" -> onOpenGroup(report.targetId)
                                             "event" -> onOpenEvent(report.targetId)
-                                            else    -> {} // posts have no standalone page
+                                            else    -> {}
                                         }
                                     },
                                     onDeleteContent = { deleteFromReport = report },
@@ -320,6 +356,7 @@ fun AdminPage(
                                     report = report,
                                     users = users, posts = posts, groups = groups, events = events,
                                     surface = surface, textPrimary = textPrimary, textSec = textSec,
+                                    onClick         = { viewingReport = report },
                                     onNavigate      = null,
                                     onDeleteContent = null,
                                     onResolve       = null,
@@ -361,8 +398,15 @@ fun AdminPage(
             onConfirm = {
                 deleteUserTarget = null
                 scope.launch {
-                    try { repo.deleteUser(u.uid); users = users.filter { it.uid != u.uid } }
-                    catch (e: Exception) { errorMsg = e.message }
+                    try {
+                        repo.deleteUser(u.uid)
+                        users   = users.filter   { it.uid != u.uid }
+                        posts   = posts.filter   { it.userId != u.uid }
+                        groups  = groups.filter  { it.ownerId != u.uid }
+                            .map { it.copy(memberIds = it.memberIds - u.uid, adminIds = it.adminIds - u.uid) }
+                        events  = events.filter  { it.creatorId != u.uid }
+                            .map { it.copy(attendeeIds = it.attendeeIds - u.uid) }
+                    } catch (e: Exception) { errorMsg = e.message }
                 }
             },
             onDismiss = { deleteUserTarget = null }
@@ -494,7 +538,15 @@ fun AdminPage(
                             "post"  -> { repo.deletePost(report.targetId);  posts  = posts.filter  { it.id  != report.targetId } }
                             "group" -> { repo.deleteGroup(report.targetId); groups = groups.filter { it.id  != report.targetId } }
                             "event" -> { repo.deleteEvent(report.targetId); events = events.filter { it.id  != report.targetId } }
-                            "user"  -> { repo.deleteUser(report.targetId);  users  = users.filter  { it.uid != report.targetId } }
+                            "user"  -> {
+                                repo.deleteUser(report.targetId)
+                                users   = users.filter   { it.uid       != report.targetId }
+                                posts   = posts.filter   { it.userId    != report.targetId }
+                                groups  = groups.filter  { it.ownerId   != report.targetId }
+                                    .map { it.copy(memberIds = it.memberIds - report.targetId, adminIds = it.adminIds - report.targetId) }
+                                events  = events.filter  { it.creatorId != report.targetId }
+                                    .map { it.copy(attendeeIds = it.attendeeIds - report.targetId) }
+                            }
                         }
                         repo.resolveReport(report.id)
                         reports = reports.map { if (it.id == report.id) it.copy(status = "resolved") else it }
@@ -502,6 +554,34 @@ fun AdminPage(
                 }
             },
             onDismiss = { deleteFromReport = null }
+        )
+    }
+
+    viewingPost?.let { post ->
+        AdminPostDetailDialog(
+            post = post,
+            surface = AppColors.surface, textPrimary = AppColors.textPrimary, textSec = AppColors.textSecondary,
+            onViewUser = { onOpenUser(post.userId) },
+            onDelete   = { viewingPost = null; deletePostTarget = post },
+            onDismiss  = { viewingPost = null }
+        )
+    }
+
+    viewingReport?.let { report ->
+        AdminReportDetailDialog(
+            report = report,
+            users = users, posts = posts, groups = groups, events = events,
+            surface = AppColors.surface, textPrimary = AppColors.textPrimary, textSec = AppColors.textSecondary,
+            onNavigate = {
+                viewingReport = null
+                when (report.targetType) {
+                    "user"  -> onOpenUser(report.targetId)
+                    "group" -> onOpenGroup(report.targetId)
+                    "event" -> onOpenEvent(report.targetId)
+                    else    -> {}
+                }
+            },
+            onDismiss = { viewingReport = null }
         )
     }
 }
@@ -582,10 +662,11 @@ private fun AdminUserRow(
 @Composable
 private fun AdminPostRow(
     post: Post, surface: Color, textPrimary: Color, textSec: Color,
-    onViewUser: () -> Unit, onDelete: () -> Unit
+    onClick: () -> Unit, onViewUser: () -> Unit, onDelete: () -> Unit
 ) {
     Row(
-        Modifier.fillMaxWidth().background(surface).padding(horizontal = 16.dp, vertical = 10.dp),
+        Modifier.fillMaxWidth().background(surface).clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
@@ -659,6 +740,7 @@ private fun AdminReportRow(
     report: Report,
     users: List<User>, posts: List<Post>, groups: List<Group>, events: List<Event>,
     surface: Color, textPrimary: Color, textSec: Color,
+    onClick: () -> Unit,
     onNavigate: (() -> Unit)?,
     onDeleteContent: (() -> Unit)?,
     onResolve: (() -> Unit)?,
@@ -671,12 +753,13 @@ private fun AdminReportRow(
         else        -> textSec
     }
     val typeLabel = when (report.targetType) {
-        "user"  -> "Lietotājs"
-        "group" -> "Grupa"
-        "event" -> "Pasākums"
-        else    -> "Ieraksts"
+        "user"    -> "Lietotājs"
+        "group"   -> "Grupa"
+        "event"   -> "Pasākums"
+        "comment" -> "Komentārs"
+        else      -> "Ieraksts"
     }
-    val canNavigate = report.targetType != "post" && onNavigate != null
+    val canNavigate = report.targetType != "post" && report.targetType != "comment" && onNavigate != null
     val ownerLabel = report.targetOwnerNickname.takeIf { it.isNotEmpty() }
         ?: report.targetId.take(20).let { if (it.length == 20) "$it…" else it }
 
@@ -686,7 +769,13 @@ private fun AdminReportRow(
     val reportedGroup = if (report.targetType == "group") groups.find { it.id  == report.targetId } else null
     val reportedEvent = if (report.targetType == "event") events.find { it.id  == report.targetId } else null
 
-    Column(Modifier.fillMaxWidth().background(surface).padding(horizontal = 16.dp, vertical = 10.dp)) {
+    // Resolve reporter name — fall back to uid lookup for legacy reports that didn't store it
+    val reporterDisplay = report.reporterNickname.takeIf { it.isNotEmpty() }
+        ?: users.find { it.uid == report.reporterId }?.nickname
+        ?: report.reporterId.take(20).let { if (it.length == 20) "$it…" else it }
+
+    Column(Modifier.fillMaxWidth().background(surface).clickable(onClick = onClick)
+        .padding(horizontal = 16.dp, vertical = 10.dp)) {
         Row(verticalAlignment = Alignment.Top) {
             Icon(Icons.Default.Flag, null, tint = accentColor, modifier = Modifier.size(18.dp).padding(top = 2.dp))
             Spacer(Modifier.width(8.dp))
@@ -695,8 +784,8 @@ private fun AdminReportRow(
                     AdminBadge(typeLabel, accentColor.copy(alpha = 0.18f), accentColor)
                     Text(report.reason, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
-                if (report.reporterNickname.isNotEmpty())
-                    Text("Ziņotājs: ${report.reporterNickname}", color = textSec, fontSize = 12.sp)
+                if (reporterDisplay.isNotEmpty())
+                    Text("Ziņotājs: $reporterDisplay", color = textSec, fontSize = 12.sp)
                 Text(
                     text = "Par: $ownerLabel",
                     color = if (canNavigate) RyderAccent else textSec,
@@ -806,6 +895,196 @@ private fun AdminReportRow(
             }
         }
     }
+}
+
+// Post detail dialog
+
+@Composable
+private fun AdminPostDetailDialog(
+    post: Post, surface: Color, textPrimary: Color, textSec: Color,
+    onViewUser: () -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = surface,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Ieraksts", color = textPrimary, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                Text(formatDate(post.createdAt), color = textSec, fontSize = 12.sp)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Autors:", color = textSec, fontSize = 12.sp)
+                    Text(post.user.nickname, color = RyderAccent, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
+                        modifier = Modifier.clickable(onClick = onViewUser))
+                }
+                if (post.description.isNotEmpty()) {
+                    HorizontalDivider(color = AppColors.divider)
+                    Text(post.description, color = textPrimary, fontSize = 14.sp)
+                }
+                if (post.mediaUrls.isNotEmpty()) {
+                    HorizontalDivider(color = AppColors.divider)
+                    val pagerState = rememberPagerState(pageCount = { post.mediaUrls.size })
+                    Box {
+                        HorizontalPager(state = pagerState) { page ->
+                            Image(
+                                painter = rememberAsyncImagePainter(post.mediaUrls[page]),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(260.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(AppColors.tileBackground),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        if (post.mediaUrls.size > 1) {
+                            Row(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                repeat(post.mediaUrls.size) { index ->
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (pagerState.currentPage == index) Color.White
+                                                else Color.White.copy(alpha = 0.4f)
+                                            )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                HorizontalDivider(color = AppColors.divider)
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text("${post.likeCount} patīk", color = textSec, fontSize = 12.sp)
+                    Text("${post.commentCount} komentāri", color = textSec, fontSize = 12.sp)
+                    Text(post.visibility, color = textSec, fontSize = 12.sp)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDelete,
+                colors = ButtonDefaults.textButtonColors(contentColor = AdminRed)) {
+                Text("Dzēst ierakstu")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Aizvērt", color = textSec) } }
+    )
+}
+
+// Report detail dialog
+
+@Composable
+private fun AdminReportDetailDialog(
+    report: Report,
+    users: List<User>, posts: List<Post>, groups: List<Group>, events: List<Event>,
+    surface: Color, textPrimary: Color, textSec: Color,
+    onNavigate: (() -> Unit)?,
+    onDismiss: () -> Unit
+) {
+    val reportedPost  = if (report.targetType == "post")  posts.find  { it.id  == report.targetId } else null
+    val reportedUser  = if (report.targetType == "user")  users.find  { it.uid == report.targetId } else null
+    val reportedGroup = if (report.targetType == "group") groups.find { it.id  == report.targetId } else null
+    val reportedEvent = if (report.targetType == "event") events.find { it.id  == report.targetId } else null
+
+    val reporterDisplay = report.reporterNickname.takeIf { it.isNotEmpty() }
+        ?: users.find { it.uid == report.reporterId }?.nickname
+        ?: report.reporterId.take(20).let { if (it.length == 20) "$it…" else it }
+
+    val canNavigate = report.targetType != "post" && report.targetType != "comment" && onNavigate != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = surface,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(Icons.Default.Flag, null, tint = textSec, modifier = Modifier.size(18.dp))
+                Text(report.reason, color = textPrimary, fontWeight = FontWeight.Bold)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Reporter info
+                Text("Ziņotājs: $reporterDisplay", color = textSec, fontSize = 13.sp)
+                // For comment reports the description holds the comment text — shown below with content
+                if (report.description.isNotEmpty() && report.targetType != "comment")
+                    Text("\"${report.description}\"", color = textPrimary, fontSize = 13.sp)
+                Text(formatDate(report.createdAt), color = textSec, fontSize = 11.sp)
+
+                HorizontalDivider(color = AppColors.divider)
+
+                // Full reported content
+                when {
+                    report.targetType == "comment" -> {
+                        Text("Komentāra saturs:", color = textSec, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text("@${report.targetOwnerNickname}", color = RyderAccent, fontSize = 13.sp)
+                        if (report.description.isNotEmpty())
+                            Text(report.description, color = textPrimary, fontSize = 13.sp)
+                    }
+                    reportedPost != null -> {
+                        Text("Ieraksta saturs:", color = textSec, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        val author = reportedPost.user.nickname.takeIf { it.isNotEmpty() }
+                            ?: report.targetOwnerNickname.takeIf { it.isNotEmpty() } ?: report.targetId
+                        Text("@$author", color = RyderAccent, fontSize = 13.sp)
+                        if (reportedPost.description.isNotEmpty())
+                            Text(reportedPost.description, color = textPrimary, fontSize = 13.sp)
+                        if (reportedPost.mediaUrls.isNotEmpty())
+                            Text("${reportedPost.mediaUrls.size} medijs(-i) pievienots", color = textSec, fontSize = 12.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text("${reportedPost.likeCount} patīk", color = textSec, fontSize = 11.sp)
+                            Text("${reportedPost.commentCount} komentāri", color = textSec, fontSize = 11.sp)
+                        }
+                    }
+                    reportedUser != null -> {
+                        Text("Lietotāja informācija:", color = textSec, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        val fullName = "${reportedUser.firstName} ${reportedUser.lastName}".trim()
+                        Text(reportedUser.nickname, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        if (fullName.isNotEmpty()) Text(fullName, color = textSec, fontSize = 13.sp)
+                        Text(reportedUser.email, color = textSec, fontSize = 12.sp)
+                        if (reportedUser.bio.isNotEmpty())
+                            Text(reportedUser.bio, color = textPrimary, fontSize = 13.sp)
+                        if (reportedUser.isAdmin) AdminBadge("ADMIN", Color(0xFFDCFFB4), Color(0xFF2E7D32))
+                        if (reportedUser.isBanned) AdminBadge("BLOĶĒTS", AdminRed.copy(alpha = 0.18f), AdminRed)
+                    }
+                    reportedGroup != null -> {
+                        Text("Grupas informācija:", color = textSec, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text(reportedGroup.name, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        if (reportedGroup.description.isNotEmpty())
+                            Text(reportedGroup.description, color = textSec, fontSize = 13.sp)
+                        Text("${reportedGroup.memberIds.size} biedri  ·  ${formatDate(reportedGroup.createdAt)}", color = textSec, fontSize = 12.sp)
+                    }
+                    reportedEvent != null -> {
+                        Text("Pasākuma informācija:", color = textSec, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text(reportedEvent.name, color = textPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        if (reportedEvent.place.isNotEmpty())
+                            Text("Vieta: ${reportedEvent.place}", color = textSec, fontSize = 13.sp)
+                        if (reportedEvent.dateTime > 0)
+                            Text("Datums: ${formatDate(reportedEvent.dateTime)}", color = textSec, fontSize = 12.sp)
+                        Text("${reportedEvent.attendeeIds.size} dalībnieki", color = textSec, fontSize = 12.sp)
+                    }
+                    else -> Text("Saturs nav atrodams (iespējams dzēsts)", color = textSec, fontSize = 13.sp)
+                }
+            }
+        },
+        confirmButton = {
+            if (canNavigate) {
+                TextButton(onClick = { onNavigate?.invoke() },
+                    colors = ButtonDefaults.textButtonColors(contentColor = RyderAccent)) {
+                    Text("Atvērt")
+                }
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Aizvērt", color = textSec) } }
+    )
 }
 
 // Edit user dialog

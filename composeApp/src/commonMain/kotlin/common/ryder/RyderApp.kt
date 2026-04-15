@@ -129,7 +129,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                             }
                         }
                     },
-                    onLoginClick = { navigateRoot(Screen.Login) }
+                    onLoginClick = { authError = null; navigateRoot(Screen.Login) }
                 )
 
                 Screen.Login -> LoginPage(
@@ -138,6 +138,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                         scope.launch {
                             val result = authService.login(email, password)
                             if (result.isSuccess) {
+                                isGuest = false
                                 userPreferences?.setRememberMe(rememberMe)
                                 loadCurrentUser()
                                 authError = null
@@ -157,7 +158,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                             }
                         }
                     },
-                    onRegisterClick = { navigateRoot(Screen.Registration) },
+                    onRegisterClick = { authError = null; navigateRoot(Screen.Registration) },
                     onContinueAsGuest = {
                         isGuest = true
                         navigateRoot(Screen.Home)

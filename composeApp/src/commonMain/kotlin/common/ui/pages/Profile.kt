@@ -201,7 +201,7 @@ fun ProfilePage(
                             onClick = { showFollowList = FollowListType.FOLLOWERS }
                         )
                         ProfileStat(
-                            count = (user?.followingCount ?: 0).toString(),
+                            count = (user?.following?.size ?: 0).toString(),
                             label = "Seko",
                             onClick = { showFollowList = FollowListType.FOLLOWING }
                         )

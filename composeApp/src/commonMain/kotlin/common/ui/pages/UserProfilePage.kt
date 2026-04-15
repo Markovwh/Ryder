@@ -245,7 +245,7 @@ fun UserProfilePage(
                         )
                         ClickableStat(
                             label = "Seko",
-                            value = u.followingCount.toString(),
+                            value = u.following.size.toString(),
                             onClick = { showFollowList = FollowListType.FOLLOWING }
                         )
                     }

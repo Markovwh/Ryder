@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
+import common.data.AdminRepository
 import common.data.GroupRepository
 import common.model.Group
 import common.model.Post
@@ -49,6 +50,7 @@ fun GroupDetailPage(
     onBack: () -> Unit
 ) {
     val repo = remember { GroupRepository() }
+    val adminRepo = remember { AdminRepository() }
     val scope = rememberCoroutineScope()
     var group by remember { mutableStateOf<Group?>(null) }
     var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
@@ -60,6 +62,7 @@ fun GroupDetailPage(
     var showEditDialog by remember { mutableStateOf(false) }
     var showPostDialog by remember { mutableStateOf(false) }
     var showDeleteGroupConfirm by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(groupId) {
         isLoading = true
@@ -136,6 +139,13 @@ fun GroupDetailPage(
                                                 } catch (_: Exception) {}
                                             }
                                         }
+                                    )
+                                }
+                                if (!isOwner) {
+                                    DropdownMenuItem(
+                                        text = { Text("Ziņot grupu") },
+                                        leadingIcon = { Icon(Icons.Default.Flag, null, tint = AppColors.textSecondary) },
+                                        onClick = { showMenu = false; showReportDialog = true }
                                     )
                                 }
                             }
@@ -352,6 +362,48 @@ fun GroupDetailPage(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteGroupConfirm = false }) {
+                    Text("Atcelt", color = AppColors.textSecondary)
+                }
+            }
+        )
+    }
+
+    if (showReportDialog && currentUser != null && g != null) {
+        val reasons = listOf("Surogātpasts", "Nepiedienīgs saturs", "Naida runa", "Viltus informācija", "Cits")
+        AlertDialog(
+            onDismissRequest = { showReportDialog = false },
+            containerColor = AppColors.surface,
+            title = { Text("Ziņot par grupu", color = AppColors.textPrimary) },
+            text = {
+                Column {
+                    reasons.forEach { reason ->
+                        TextButton(
+                            onClick = {
+                                showReportDialog = false
+                                scope.launch {
+                                    try {
+                                        adminRepo.submitReport(
+                                            targetId = groupId,
+                                            targetType = "group",
+                                            targetOwnerNickname = g.name,
+                                            reporterId = currentUser.uid,
+                                            reporterNickname = currentUser.nickname,
+                                            reason = reason
+                                        )
+                                    } catch (_: Exception) {}
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(reason, color = AppColors.textPrimary, modifier = Modifier.fillMaxWidth())
+                        }
+                        HorizontalDivider(color = AppColors.divider)
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showReportDialog = false }) {
                     Text("Atcelt", color = AppColors.textSecondary)
                 }
             }

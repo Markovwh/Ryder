@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import common.data.AdminRepository
 import common.data.EventRepository
 import common.model.Event
 import common.model.User
@@ -34,12 +35,14 @@ fun EventDetailPage(
     onBack: () -> Unit
 ) {
     val repo = remember { EventRepository() }
+    val adminRepo = remember { AdminRepository() }
     val scope = rememberCoroutineScope()
     var event by remember { mutableStateOf<Event?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
     var editName by remember { mutableStateOf("") }
     var editPlace by remember { mutableStateOf("") }
     var editDescription by remember { mutableStateOf("") }
@@ -92,26 +95,34 @@ fun EventDetailPage(
                         fontSize = 17.sp,
                         modifier = Modifier.weight(1f)
                     )
-                    if (isCreator) {
+                    if (currentUser != null && e != null) {
                         Box {
                             IconButton(onClick = { showMenu = true }) {
                                 Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = textSecondary)
                             }
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                                DropdownMenuItem(
-                                    text = { Text("Rediģēt notikumu") },
-                                    onClick = {
-                                        showMenu = false
-                                        editName = e?.name ?: ""
-                                        editPlace = e?.place ?: ""
-                                        editDescription = e?.description ?: ""
-                                        showEditDialog = true
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Dzēst notikumu", color = Color(0xFFE53935)) },
-                                    onClick = { showMenu = false; showDeleteConfirm = true }
-                                )
+                                if (isCreator) {
+                                    DropdownMenuItem(
+                                        text = { Text("Rediģēt notikumu") },
+                                        onClick = {
+                                            showMenu = false
+                                            editName = e.name
+                                            editPlace = e.place
+                                            editDescription = e.description
+                                            showEditDialog = true
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Dzēst notikumu", color = Color(0xFFE53935)) },
+                                        onClick = { showMenu = false; showDeleteConfirm = true }
+                                    )
+                                } else {
+                                    DropdownMenuItem(
+                                        text = { Text("Ziņot notikumu") },
+                                        leadingIcon = { Icon(Icons.Default.Flag, null, tint = textSecondary) },
+                                        onClick = { showMenu = false; showReportDialog = true }
+                                    )
+                                }
                             }
                         }
                     }
@@ -315,6 +326,46 @@ fun EventDetailPage(
             },
             dismissButton = {
                 TextButton(onClick = { showEditDialog = false }) { Text("Atcelt", color = textSecondary) }
+            }
+        )
+    }
+
+    if (showReportDialog && currentUser != null && e != null) {
+        val reasons = listOf("Surogātpasts", "Nepiedienīgs saturs", "Naida runa", "Viltus informācija", "Cits")
+        AlertDialog(
+            onDismissRequest = { showReportDialog = false },
+            containerColor = surface,
+            title = { Text("Ziņot par notikumu", color = textPrimary) },
+            text = {
+                Column {
+                    reasons.forEach { reason ->
+                        TextButton(
+                            onClick = {
+                                showReportDialog = false
+                                scope.launch {
+                                    try {
+                                        adminRepo.submitReport(
+                                            targetId = eventId,
+                                            targetType = "event",
+                                            targetOwnerNickname = e.name,
+                                            reporterId = currentUser.uid,
+                                            reporterNickname = currentUser.nickname,
+                                            reason = reason
+                                        )
+                                    } catch (_: Exception) {}
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(reason, color = textPrimary, modifier = Modifier.fillMaxWidth())
+                        }
+                        HorizontalDivider(color = divColor)
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showReportDialog = false }) { Text("Atcelt", color = textSecondary) }
             }
         )
     }
