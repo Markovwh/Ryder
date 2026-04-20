@@ -1,9 +1,14 @@
 package common.ui.pages
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +38,9 @@ fun Homepage(
     var followingIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var followerIds by remember { mutableStateOf<Set<String>>(emptySet()) }
 
+    var friendsOnly by remember { mutableStateOf(false) }
+    var showFilterMenu by remember { mutableStateOf(false) }
+
     // Fetch who the current user follows and who follows them so the feed can
     // apply "Privāts" / "Draugi" visibility rules correctly.
     LaunchedEffect(currentUser?.uid) {
@@ -43,6 +51,7 @@ fun Homepage(
         } else {
             followingIds = emptySet()
             followerIds = emptySet()
+            friendsOnly = false
         }
     }
 
@@ -55,6 +64,16 @@ fun Homepage(
             followerIds = followerIds
         ) { posts = it }
         onDispose { unsub() }
+    }
+
+    // Client-side friends filter: mutual follows + own posts
+    val displayedPosts: List<Post> = remember(posts, friendsOnly, followingIds, followerIds, currentUser) {
+        if (friendsOnly && currentUser != null) {
+            val mutualIds = followingIds.intersect(followerIds)
+            posts.filter { it.userId == currentUser.uid || it.userId in mutualIds }
+        } else {
+            posts
+        }
     }
 
     Scaffold(containerColor = AppColors.background) { paddingValues ->
@@ -74,9 +93,62 @@ fun Homepage(
                     text = "Ryder",
                     color = RyderAccent,
                     fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
+                    fontWeight = FontWeight.Bold
                 )
+
+                if (isUserLoggedIn) {
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Box {
+                        Surface(
+                            onClick = { showFilterMenu = true },
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.Transparent,
+                            border = BorderStroke(1.dp, AppColors.inputBorder)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (friendsOnly) "Draugi" else "Visi",
+                                    color = AppColors.textSecondary,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(Modifier.width(2.dp))
+                                Icon(
+                                    Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                    tint = AppColors.textSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = showFilterMenu,
+                            onDismissRequest = { showFilterMenu = false },
+                            containerColor = AppColors.surface
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Visi", color = AppColors.textPrimary) },
+                                trailingIcon = if (!friendsOnly) {
+                                    { Icon(Icons.Default.Check, null, tint = RyderAccent) }
+                                } else null,
+                                onClick = { friendsOnly = false; showFilterMenu = false }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Draugi", color = AppColors.textPrimary) },
+                                trailingIcon = if (friendsOnly) {
+                                    { Icon(Icons.Default.Check, null, tint = RyderAccent) }
+                                } else null,
+                                onClick = { friendsOnly = true; showFilterMenu = false }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
                 if (!isUserLoggedIn) {
                     TextButton(onClick = onLoginClick) {
                         Text("Pieslēgties", color = AppColors.textPrimary)
@@ -95,7 +167,7 @@ fun Homepage(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                items(posts) { post ->
+                items(displayedPosts) { post ->
                     PostCard(post = post, currentUser = currentUser)
                 }
             }
