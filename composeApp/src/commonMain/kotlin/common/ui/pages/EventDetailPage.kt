@@ -3,6 +3,8 @@
 package common.ui.pages
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -24,6 +26,7 @@ import common.model.Event
 import common.model.User
 import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
+import common.ui.pages.components.ScrollTimePickerDialog
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -46,6 +49,9 @@ fun EventDetailPage(
     var editName by remember { mutableStateOf("") }
     var editPlace by remember { mutableStateOf("") }
     var editDescription by remember { mutableStateOf("") }
+    var editHour by remember { mutableStateOf(0) }
+    var editMinute by remember { mutableStateOf(0) }
+    var showEditTimePicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(eventId) {
         isLoading = true
@@ -109,6 +115,9 @@ fun EventDetailPage(
                                             editName = e.name
                                             editPlace = e.place
                                             editDescription = e.description
+                                            val cal = Calendar.getInstance().apply { timeInMillis = e.dateTime }
+                                            editHour = cal.get(Calendar.HOUR_OF_DAY)
+                                            editMinute = cal.get(Calendar.MINUTE)
                                             showEditDialog = true
                                         }
                                     )
@@ -213,7 +222,7 @@ fun EventDetailPage(
                                 Text("Tu apmeklē šo notikumu", color = RyderAccent, fontSize = 12.sp)
                             }
                         }
-                        if (currentUser != null) {
+                        if (currentUser != null && !isCreator) {
                             Button(
                                 onClick = {
                                     val uid = currentUser.uid
@@ -306,14 +315,44 @@ fun EventDetailPage(
                         colors = fieldColors,
                         minLines = 2
                     )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, AppColors.inputBorder, RoundedCornerShape(12.dp))
+                            .clickable { showEditTimePicker = true }
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.AccessTime,
+                            contentDescription = null,
+                            tint = RyderAccent,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            text = String.format("%02d:%02d", editHour, editMinute),
+                            color = textPrimary,
+                            fontSize = 15.sp
+                        )
+                    }
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
+                    val dayMillis = run {
+                        val cal = Calendar.getInstance().apply { timeInMillis = e.dateTime }
+                        cal.set(Calendar.HOUR_OF_DAY, 0)
+                        cal.set(Calendar.MINUTE, 0)
+                        cal.set(Calendar.SECOND, 0)
+                        cal.set(Calendar.MILLISECOND, 0)
+                        cal.timeInMillis
+                    }
                     val updated = e.copy(
                         name = editName.trim().ifEmpty { e.name },
                         place = editPlace.trim().ifEmpty { e.place },
-                        description = editDescription.trim()
+                        description = editDescription.trim(),
+                        dateTime = dayMillis + editHour * 3_600_000L + editMinute * 60_000L
                     )
                     showEditDialog = false
                     scope.launch {
@@ -327,6 +366,15 @@ fun EventDetailPage(
             dismissButton = {
                 TextButton(onClick = { showEditDialog = false }) { Text("Atcelt", color = textSecondary) }
             }
+        )
+    }
+
+    if (showEditTimePicker) {
+        ScrollTimePickerDialog(
+            initialHour = editHour,
+            initialMinute = editMinute,
+            onConfirm = { h, m -> editHour = h; editMinute = m; showEditTimePicker = false },
+            onDismiss = { showEditTimePicker = false }
         )
     }
 

@@ -385,7 +385,7 @@ fun UserProfilePage(
             } else {
                 val rows = posts.chunked(3)
                 itemsIndexed(rows) { _, row ->
-                    Row(modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.fillMaxWidth().background(AppColors.background)) {
                         row.forEach { post ->
                             Box(
                                 modifier = Modifier
