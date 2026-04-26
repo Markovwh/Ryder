@@ -372,7 +372,6 @@ private fun PostGridTile(post: Post, tileBg: Color, modifier: Modifier, onClick:
     Box(
         modifier = modifier
             .background(tileBg)
-            .border(1.dp, Color.White)
             .clickable(onClick = onClick)
     ) {
         if (post.mediaUrls.isNotEmpty()) {

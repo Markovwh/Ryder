@@ -27,6 +27,7 @@ import common.model.Event
 import common.model.User
 import common.ui.pages.components.AppColors
 import common.ui.pages.components.RyderAccent
+import common.ui.pages.components.ScrollTimePickerDialog
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -58,7 +59,6 @@ fun CreateEventScreen(
     val textHint = AppColors.textHint
 
     val datePickerState = rememberDatePickerState()
-    val timePickerState = rememberTimePickerState(initialHour = 12, initialMinute = 0, is24Hour = true)
 
     val dateText = if (selectedDateMillis != null) {
         SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(selectedDateMillis!!))
@@ -276,32 +276,11 @@ fun CreateEventScreen(
     }
 
     if (showTimePicker) {
-        AlertDialog(
-            onDismissRequest = { showTimePicker = false },
-            containerColor = surface,
-            title = { Text("Izvēlēties laiku", color = textPrimary) },
-            text = {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    TimePicker(
-                        state = timePickerState,
-                        colors = TimePickerDefaults.colors(
-                            selectorColor = RyderAccent
-                        )
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    selectedHour = timePickerState.hour
-                    selectedMinute = timePickerState.minute
-                    showTimePicker = false
-                }) { Text("OK", color = RyderAccent) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
-                    Text("Atcelt", color = textSecondary)
-                }
-            }
+        ScrollTimePickerDialog(
+            initialHour = selectedHour,
+            initialMinute = selectedMinute,
+            onConfirm = { h, m -> selectedHour = h; selectedMinute = m; showTimePicker = false },
+            onDismiss = { showTimePicker = false }
         )
     }
 }
