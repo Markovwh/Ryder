@@ -37,6 +37,9 @@ kotlin {
             implementation("androidx.datastore:datastore-preferences:1.1.0")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
             implementation("io.coil-kt:coil-compose:2.4.0")
+            implementation("io.coil-kt:coil-video:2.4.0")
+            implementation("androidx.media3:media3-exoplayer:1.4.1")
+            implementation("androidx.media3:media3-ui:1.4.1")
 
             val nav_version = "2.9.6"
             implementation("androidx.navigation:navigation-compose:$nav_version")

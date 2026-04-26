@@ -119,7 +119,18 @@ fun MessagesPage(
                 selectedTabIndex = selectedTab,
                 containerColor = surface,
                 contentColor = RyderAccent,
-                divider = {}
+                divider = {},
+                indicator = { tabPositions ->
+                    val pos = tabPositions[selectedTab]
+                    Box(
+                        Modifier
+                            .wrapContentSize(Alignment.BottomStart)
+                            .offset(x = pos.left)
+                            .width(pos.width)
+                            .height(2.dp)
+                            .background(RyderAccent)
+                    )
+                }
             ) {
                 listOf("Ziņas", "Grupas", "Notikumi").forEachIndexed { index, title ->
                     Tab(

@@ -331,10 +331,7 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                                 navigateRoot(Screen.Login)
                             },
                             onBack = { navigateBack() },
-                            onOpenAdmin = { navigateTo(Screen.Admin) },
-                            onAdminGranted = {
-                                scope.launch { loadCurrentUser() }
-                            }
+                            onOpenAdmin = { navigateTo(Screen.Admin) }
                         )
                     } else {
                         navigateRoot(Screen.Login)

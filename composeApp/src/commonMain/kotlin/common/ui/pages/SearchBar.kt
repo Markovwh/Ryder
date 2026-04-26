@@ -165,7 +165,18 @@ fun SearchPage(
         TabRow(
             selectedTabIndex = selectedTab.ordinal,
             containerColor = surface,
-            contentColor = RyderAccent
+            contentColor = RyderAccent,
+            indicator = { tabPositions ->
+                val pos = tabPositions[selectedTab.ordinal]
+                Box(
+                    Modifier
+                        .wrapContentSize(Alignment.BottomStart)
+                        .offset(x = pos.left)
+                        .width(pos.width)
+                        .height(2.dp)
+                        .background(RyderAccent)
+                )
+            }
         ) {
             SearchTab.entries.forEach { tab ->
                 Tab(

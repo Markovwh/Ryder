@@ -2,7 +2,6 @@ package common.ui.pages
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -57,7 +57,7 @@ fun CreatePostScreen(
     val scope = rememberCoroutineScope()
 
     val mediaPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickMultipleVisualMedia()
+        ActivityResultContracts.OpenMultipleDocuments()
     ) { uris -> if (uris.isNotEmpty()) { selectedUris = selectedUris + uris; validationError = null } }
 
     val bg = AppColors.background
@@ -205,9 +205,7 @@ fun CreatePostScreen(
                             .height(180.dp)
                             .background(surface, RoundedCornerShape(12.dp))
                             .clickable {
-                                mediaPickerLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
-                                )
+                                mediaPickerLauncher.launch(arrayOf("image/*", "video/*"))
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -225,6 +223,9 @@ fun CreatePostScreen(
                 } else {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(selectedUris) { uri ->
+                            val isVideo = remember(uri) {
+                                context.contentResolver.getType(uri)?.startsWith("video") == true
+                            }
                             Box(modifier = Modifier.size(120.dp)) {
                                 Image(
                                     painter = rememberAsyncImagePainter(uri),
@@ -235,6 +236,16 @@ fun CreatePostScreen(
                                         .background(AppColors.avatarPlaceholder),
                                     contentScale = ContentScale.Crop
                                 )
+                                if (isVideo) {
+                                    Icon(
+                                        Icons.Default.PlayCircle,
+                                        contentDescription = null,
+                                        tint = Color.White.copy(alpha = 0.85f),
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .align(Alignment.Center)
+                                    )
+                                }
                                 IconButton(
                                     onClick = { selectedUris = selectedUris - uri },
                                     modifier = Modifier
@@ -257,9 +268,7 @@ fun CreatePostScreen(
                                     .size(120.dp)
                                     .background(surface, RoundedCornerShape(8.dp))
                                     .clickable {
-                                        mediaPickerLauncher.launch(
-                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
-                                        )
+                                        mediaPickerLauncher.launch(arrayOf("image/*", "video/*"))
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
