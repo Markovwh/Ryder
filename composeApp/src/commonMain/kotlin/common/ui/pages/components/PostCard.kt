@@ -133,15 +133,25 @@ fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
                 val pagerState = rememberPagerState(pageCount = { post.mediaUrls.size })
                 Box {
                     HorizontalPager(state = pagerState) { page ->
-                        Image(
-                            painter = rememberAsyncImagePainter(post.mediaUrls[page]),
-                            contentDescription = "Ziņas medijs",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(300.dp)
-                                .background(AppColors.avatarPlaceholder),
-                            contentScale = ContentScale.Crop
-                        )
+                        val url = post.mediaUrls[page]
+                        if (url.isVideoUrl()) {
+                            VideoPlayer(
+                                url = url,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(300.dp)
+                            )
+                        } else {
+                            Image(
+                                painter = rememberAsyncImagePainter(url),
+                                contentDescription = "Ziņas medijs",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(300.dp)
+                                    .background(AppColors.avatarPlaceholder),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
                     }
                     if (post.mediaUrls.size > 1) {
                         Row(

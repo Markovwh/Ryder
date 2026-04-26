@@ -166,7 +166,18 @@ fun AdminPage(
                 containerColor   = surface,
                 contentColor     = RyderAccent,
                 edgePadding      = 0.dp,
-                divider          = { HorizontalDivider(color = divider) }
+                divider          = { HorizontalDivider(color = divider) },
+                indicator        = { tabPositions ->
+                    val pos = tabPositions[selectedTab.ordinal]
+                    Box(
+                        Modifier
+                            .wrapContentSize(Alignment.BottomStart)
+                            .offset(x = pos.left)
+                            .width(pos.width)
+                            .height(2.dp)
+                            .background(RyderAccent)
+                    )
+                }
             ) {
                 AdminTab.entries.forEach { tab ->
                     val badge = if (tab == AdminTab.REPORTS && pendingReports > 0) " ($pendingReports)" else ""
@@ -205,17 +216,9 @@ fun AdminPage(
                             AdminUserRow(
                                 user = u, isCurrentUser = u.uid == currentUser?.uid,
                                 surface = surface, textPrimary = textPrimary, textSec = textSec, divider = divider,
-                                onView        = { onOpenUser(u.uid) },
-                                onEdit        = { editingUser = u },
-                                onDelete      = { deleteUserTarget = u },
-                                onToggleAdmin = {
-                                    scope.launch {
-                                        try {
-                                            repo.setUserAdmin(u.uid, !u.isAdmin)
-                                            users = users.map { if (it.uid == u.uid) it.copy(isAdmin = !it.isAdmin) else it }
-                                        } catch (e: Exception) { errorMsg = e.message }
-                                    }
-                                },
+                                onView    = { onOpenUser(u.uid) },
+                                onEdit    = { editingUser = u },
+                                onDelete  = { deleteUserTarget = u },
                                 onToggleBan = { banUserTarget = u }
                             )
                             HorizontalDivider(color = divider)
@@ -227,17 +230,9 @@ fun AdminPage(
                             AdminUserRow(
                                 user = u, isCurrentUser = u.uid == currentUser?.uid,
                                 surface = surface, textPrimary = textPrimary, textSec = textSec, divider = divider,
-                                onView        = { onOpenUser(u.uid) },
-                                onEdit        = { editingUser = u },
-                                onDelete      = { deleteUserTarget = u },
-                                onToggleAdmin = {
-                                    scope.launch {
-                                        try {
-                                            repo.setUserAdmin(u.uid, !u.isAdmin)
-                                            users = users.map { if (it.uid == u.uid) it.copy(isAdmin = !it.isAdmin) else it }
-                                        } catch (e: Exception) { errorMsg = e.message }
-                                    }
-                                },
+                                onView    = { onOpenUser(u.uid) },
+                                onEdit    = { editingUser = u },
+                                onDelete  = { deleteUserTarget = u },
                                 onToggleBan = { banUserTarget = u }
                             )
                             HorizontalDivider(color = divider)
@@ -249,17 +244,9 @@ fun AdminPage(
                             AdminUserRow(
                                 user = u, isCurrentUser = u.uid == currentUser?.uid,
                                 surface = surface, textPrimary = textPrimary, textSec = textSec, divider = divider,
-                                onView        = { onOpenUser(u.uid) },
-                                onEdit        = { editingUser = u },
-                                onDelete      = { deleteUserTarget = u },
-                                onToggleAdmin = {
-                                    scope.launch {
-                                        try {
-                                            repo.setUserAdmin(u.uid, !u.isAdmin)
-                                            users = users.map { if (it.uid == u.uid) it.copy(isAdmin = !it.isAdmin) else it }
-                                        } catch (e: Exception) { errorMsg = e.message }
-                                    }
-                                },
+                                onView    = { onOpenUser(u.uid) },
+                                onEdit    = { editingUser = u },
+                                onDelete  = { deleteUserTarget = u },
                                 onToggleBan = { banUserTarget = u }
                             )
                             HorizontalDivider(color = divider)
@@ -593,7 +580,7 @@ private fun AdminUserRow(
     user: User, isCurrentUser: Boolean,
     surface: Color, textPrimary: Color, textSec: Color, divider: Color,
     onView: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit,
-    onToggleAdmin: () -> Unit, onToggleBan: () -> Unit
+    onToggleBan: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val rowBg = if (user.isBanned) AdminRed.copy(alpha = 0.08f) else surface
@@ -635,10 +622,6 @@ private fun AdminUserRow(
                         text = { Text("Rediģēt", color = AppColors.textPrimary) },
                         leadingIcon = { Icon(Icons.Default.Edit, null, tint = AppColors.textPrimary) },
                         onClick = { showMenu = false; onEdit() })
-                    DropdownMenuItem(
-                        text = { Text(if (user.isAdmin) "Noņemt admin" else "Piešķirt admin", color = AppColors.textPrimary) },
-                        leadingIcon = { Icon(Icons.Default.AdminPanelSettings, null, tint = AppColors.textPrimary) },
-                        onClick = { showMenu = false; onToggleAdmin() })
                     DropdownMenuItem(
                         text = {
                             Text(if (user.isBanned) "Atcelt bloķēšanu" else "Bloķēt",

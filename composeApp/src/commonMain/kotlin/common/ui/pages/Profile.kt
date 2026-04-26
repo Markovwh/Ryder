@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import common.data.AuthService
+import common.ui.pages.components.isVideoUrl
+import common.ui.pages.components.rememberVideoThumbnailLoader
 import common.data.PostRepository
 import common.data.UserRepository
 import common.model.Post
@@ -373,12 +376,26 @@ private fun PostGridTile(post: Post, tileBg: Color, modifier: Modifier, onClick:
             .clickable(onClick = onClick)
     ) {
         if (post.mediaUrls.isNotEmpty()) {
+            val url = post.mediaUrls.first()
+            val isVideo = url.isVideoUrl()
+            val loader = if (isVideo) rememberVideoThumbnailLoader() else null
             Image(
-                painter = rememberAsyncImagePainter(post.mediaUrls.first()),
+                painter = if (loader != null)
+                    rememberAsyncImagePainter(model = url, imageLoader = loader)
+                else
+                    rememberAsyncImagePainter(url),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
+            if (isVideo) {
+                Icon(
+                    imageVector = Icons.Default.PlayCircle,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.size(28.dp).align(Alignment.Center)
+                )
+            }
         } else {
             Box(
                 modifier = Modifier.fillMaxSize().background(tileBg),

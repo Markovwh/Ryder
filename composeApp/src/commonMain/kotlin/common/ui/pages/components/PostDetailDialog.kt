@@ -166,15 +166,25 @@ fun PostDetailDialog(
                             val pagerState = rememberPagerState(pageCount = { post.mediaUrls.size })
                             Box {
                                 HorizontalPager(state = pagerState) { page ->
-                                    Image(
-                                        painter = rememberAsyncImagePainter(post.mediaUrls[page]),
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(260.dp)
-                                            .background(AppColors.avatarPlaceholder),
-                                        contentScale = ContentScale.Crop
-                                    )
+                                    val url = post.mediaUrls[page]
+                                    if (url.isVideoUrl()) {
+                                        VideoPlayer(
+                                            url = url,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(260.dp)
+                                        )
+                                    } else {
+                                        Image(
+                                            painter = rememberAsyncImagePainter(url),
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(260.dp)
+                                                .background(AppColors.avatarPlaceholder),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
                                 }
                                 if (post.mediaUrls.size > 1) {
                                     Row(
