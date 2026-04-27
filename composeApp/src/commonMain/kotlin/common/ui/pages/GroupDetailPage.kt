@@ -47,7 +47,8 @@ import java.util.*
 fun GroupDetailPage(
     groupId: String,
     currentUser: User?,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onUserClick: ((String, String) -> Unit)? = null
 ) {
     val repo = remember { GroupRepository() }
     val adminRepo = remember { AdminRepository() }
@@ -227,6 +228,7 @@ fun GroupDetailPage(
                         post = post,
                         isPinned = true,
                         isAdmin = isAdmin,
+                        onUserClick = onUserClick,
                         onPin = {},
                         onUnpin = {
                             scope.launch {
@@ -271,6 +273,7 @@ fun GroupDetailPage(
                         post = post,
                         isPinned = false,
                         isAdmin = isAdmin,
+                        onUserClick = onUserClick,
                         onPin = {
                             scope.launch {
                                 try {
@@ -484,6 +487,7 @@ private fun GroupPostCard(
     post: Post,
     isPinned: Boolean,
     isAdmin: Boolean,
+    onUserClick: ((String, String) -> Unit)? = null,
     onPin: () -> Unit,
     onUnpin: () -> Unit,
     onRemove: () -> Unit
@@ -496,34 +500,43 @@ private fun GroupPostCard(
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (post.user.profilePicture != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(post.user.profilePicture),
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp).clip(CircleShape).background(AppColors.divider),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = RyderAccent) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            post.user.nickname.take(1).uppercase(),
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(enabled = onUserClick != null) {
+                        onUserClick?.invoke(post.user.uid, post.user.nickname)
+                    }
+            ) {
+                if (post.user.profilePicture != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(post.user.profilePicture),
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp).clip(CircleShape).background(AppColors.divider),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = RyderAccent) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                post.user.nickname.take(1).uppercase(),
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
-            }
-            Spacer(Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    post.user.nickname,
-                    color = AppColors.textPrimary,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
-                )
-                Text(formatGroupPostTime(post.createdAt), color = AppColors.textSecondary, fontSize = 11.sp)
+                Spacer(Modifier.width(10.dp))
+                Column {
+                    Text(
+                        post.user.nickname,
+                        color = AppColors.textPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
+                    )
+                    Text(formatGroupPostTime(post.createdAt), color = AppColors.textSecondary, fontSize = 11.sp)
+                }
             }
             if (isPinned) {
                 Icon(
@@ -544,7 +557,8 @@ private fun GroupPostCard(
                             modifier = Modifier.size(18.dp)
                         )
                     }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false },
+                        containerColor = AppColors.dropdownBackground) {
                         if (!isPinned) {
                             DropdownMenuItem(
                                 text = { Text("Piespraust") },

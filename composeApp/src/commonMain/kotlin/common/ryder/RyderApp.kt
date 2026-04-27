@@ -172,7 +172,8 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     onLoginClick = { navigateRoot(Screen.Login) },
                     onRegisterClick = { navigateRoot(Screen.Registration) },
                     isUserLoggedIn = authService.getCurrentUserId() != null && !isGuest,
-                    currentUser = if (!isGuest) currentUser else null
+                    currentUser = if (!isGuest) currentUser else null,
+                    onUserClick = { uid, nickname -> navigateTo(Screen.UserProfile(uid, nickname)) }
                 )
 
                 Screen.Search -> SearchPage(
@@ -209,7 +210,8 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     HashtagFeedPage(
                         hashtag = s.hashtag,
                         currentUser = currentUser,
-                        onBack = { navigateBack() }
+                        onBack = { navigateBack() },
+                        onUserClick = { uid, nickname -> navigateTo(Screen.UserProfile(uid, nickname)) }
                     )
                 }
 
@@ -236,7 +238,8 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     GroupDetailPage(
                         groupId = s.groupId,
                         currentUser = currentUser,
-                        onBack = { navigateBack() }
+                        onBack = { navigateBack() },
+                        onUserClick = { uid, nickname -> navigateTo(Screen.UserProfile(uid, nickname)) }
                     )
                 }
 

@@ -30,7 +30,8 @@ fun Homepage(
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit,
     isUserLoggedIn: Boolean,
-    currentUser: User? = null
+    currentUser: User? = null,
+    onUserClick: ((String, String) -> Unit)? = null
 ) {
     val repository = remember { PostRepository() }
     val userRepo = remember { UserRepository() }
@@ -168,7 +169,7 @@ fun Homepage(
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
                 items(displayedPosts) { post ->
-                    PostCard(post = post, currentUser = currentUser)
+                    PostCard(post = post, currentUser = currentUser, onUserClick = onUserClick)
                 }
             }
         }

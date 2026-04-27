@@ -41,4 +41,7 @@ object AppColors {
 
     val tagBackground: Color
         @Composable get() = if (LocalIsDarkTheme.current) Color(0xFF333333) else Color(0xFFEEEEEE)
+
+    val dropdownBackground: Color
+        @Composable get() = if (LocalIsDarkTheme.current) Color(0xFF252525) else Color(0xFFE8E8E8)
 }
