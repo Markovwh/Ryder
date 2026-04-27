@@ -11,6 +11,19 @@ class AuthServiceImplAndroid : AuthService {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
+    override suspend fun isNicknameAvailable(nickname: String, excludeUid: String?): Result<Boolean> {
+        return try {
+            val snapshot = firestore.collection("users")
+                .whereEqualTo("nickname", nickname.trim())
+                .get()
+                .await()
+            val taken = snapshot.documents.any { it.id != excludeUid }
+            Result.success(!taken)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun register(
         email: String,
         password: String,
@@ -19,6 +32,11 @@ class AuthServiceImplAndroid : AuthService {
         lastName: String
     ): Result<Unit> {
         return try {
+
+            val nicknameCheck = isNicknameAvailable(nickname)
+            if (nicknameCheck.isFailure || nicknameCheck.getOrDefault(false) == false) {
+                return Result.failure(Exception("Šis lietotājvārds jau ir aizņemts"))
+            }
 
             val result = auth
                 .createUserWithEmailAndPassword(email, password)

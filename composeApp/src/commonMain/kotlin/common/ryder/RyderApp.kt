@@ -118,6 +118,9 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
 
                 Screen.Registration -> RegistrationPage(
                     backendError = authError,
+                    onCheckNicknameAvailable = { nickname ->
+                        authService.isNicknameAvailable(nickname).getOrDefault(false)
+                    },
                     onRegister = { email, password, nickname, firstName, lastName ->
                         scope.launch {
                             val result = authService.register(email, password, nickname, firstName, lastName)

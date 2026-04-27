@@ -22,5 +22,7 @@ interface AuthService {
 
     suspend fun updateUserData(user: User): Result<Unit>
 
+    suspend fun isNicknameAvailable(nickname: String, excludeUid: String? = null): Result<Boolean>
+
     fun logout()
 }
