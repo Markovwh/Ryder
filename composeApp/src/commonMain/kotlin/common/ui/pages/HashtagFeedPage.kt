@@ -24,7 +24,8 @@ import common.ui.pages.components.RyderAccent
 fun HashtagFeedPage(
     hashtag: String,
     currentUser: User?,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onUserClick: ((String, String) -> Unit)? = null
 ) {
     val repository = remember { PostRepository() }
     var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
@@ -87,7 +88,7 @@ fun HashtagFeedPage(
                     )
                 }
                 items(posts, key = { it.id }) { post ->
-                    PostCard(post = post, currentUser = currentUser)
+                    PostCard(post = post, currentUser = currentUser, onUserClick = onUserClick)
                 }
             }
         }

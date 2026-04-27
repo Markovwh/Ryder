@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit
 private val HeartRed = Color(0xFFE53935)
 
 @Composable
-fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
+fun PostCard(post: Post, currentUser: User?, onUserClick: ((String, String) -> Unit)? = null, onDeleted: (() -> Unit)? = null) {
     val cardBg = AppColors.surface
     val divColor = AppColors.divider
     val textPrimary = AppColors.textPrimary
@@ -87,32 +87,45 @@ fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
                     .padding(horizontal = 10.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                UserAvatar(
-                    profilePicture = post.user.profilePicture,
-                    nickname = post.user.nickname,
-                    size = 40.dp
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = post.user.nickname,
-                        color = textPrimary,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(enabled = onUserClick != null) {
+                            onUserClick?.invoke(post.user.uid, post.user.nickname)
+                        }
+                ) {
+                    UserAvatar(
+                        profilePicture = post.user.profilePicture,
+                        nickname = post.user.nickname,
+                        size = 40.dp
                     )
-                    val time = PostCardTimeFormatter.formatTimeAgo(post.createdAt)
-                    if (time.isNotEmpty()) {
-                        Text(text = time, color = textSecondary, fontSize = 11.sp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = post.user.nickname,
+                            color = textPrimary,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                        val time = PostCardTimeFormatter.formatTimeAgo(post.createdAt)
+                        if (time.isNotEmpty()) {
+                            Text(text = time, color = textSecondary, fontSize = 11.sp)
+                        }
                     }
                 }
                 Box {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Vairāk", tint = textSecondary)
                     }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        containerColor = AppColors.dropdownBackground
+                    ) {
                         if (isOwner) {
                             DropdownMenuItem(
-                                text = { Text("Rediģēt") },
+                                text = { Text("Rediģēt", color = textPrimary) },
                                 onClick = { showMenu = false; editText = post.description; showEditDialog = true }
                             )
                             DropdownMenuItem(
@@ -121,7 +134,7 @@ fun PostCard(post: Post, currentUser: User?, onDeleted: (() -> Unit)? = null) {
                             )
                         } else {
                             DropdownMenuItem(
-                                text = { Text("Ziņot") },
+                                text = { Text("Ziņot", color = textPrimary) },
                                 onClick = { showMenu = false; showReportDialog = true }
                             )
                         }
@@ -441,7 +454,7 @@ private fun CommentsSheet(
                                         Icon(Icons.Default.MoreVert, null, tint = textSecondary, modifier = Modifier.size(16.dp))
                                     }
                                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false },
-                                        containerColor = AppColors.surface) {
+                                        containerColor = AppColors.dropdownBackground) {
                                         DropdownMenuItem(
                                             text = { Text("Ziņot", color = textPrimary) },
                                             onClick = { menuExpanded = false; reportingComment = comment }
