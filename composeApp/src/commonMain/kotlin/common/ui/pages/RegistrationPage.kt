@@ -18,10 +18,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import common.ui.pages.components.RyderAccent
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegistrationPage(
     backendError: String? = null,
+    nicknameBackendError: String? = null,
+    onCheckNicknameAvailable: suspend (String) -> Boolean,
     onRegister: (
         email: String,
         password: String,
@@ -45,7 +48,9 @@ fun RegistrationPage(
     var nicknameError by remember { mutableStateOf<String?>(null) }
     var firstNameError by remember { mutableStateOf<String?>(null) }
     var lastNameError by remember { mutableStateOf<String?>(null) }
+    var isChecking by remember { mutableStateOf(false) }
 
+    val scope = rememberCoroutineScope()
     val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$".toRegex()
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -94,16 +99,17 @@ fun RegistrationPage(
             modifier = Modifier.fillMaxWidth(0.85f)
         )
 
+        val effectiveNicknameError = nicknameError ?: nicknameBackendError
         OutlinedTextField(
             shape = RoundedCornerShape(12.dp),
             value = nickname,
             onValueChange = { nickname = it; nicknameError = null },
             label = { Text("Lietotājvārds") },
-            isError = nicknameError != null,
+            isError = effectiveNicknameError != null,
             supportingText = {
                 Text(
-                    nicknameError ?: "Redzams citiem lietotājiem",
-                    color = if (nicknameError != null) Color(0xFFE53935) else Color(0xFF757575)
+                    effectiveNicknameError ?: "Redzams citiem lietotājiem",
+                    color = if (effectiveNicknameError != null) Color(0xFFE53935) else Color(0xFF757575)
                 )
             },
             colors = textFieldColors,
@@ -190,25 +196,48 @@ fun RegistrationPage(
 
         Button(
             onClick = {
-                var valid = true
-                if (email.isBlank()) { emailError = "E-pasts ir obligāts"; valid = false }
-                else if (!email.matches(emailRegex)) { emailError = "Nederīgs e-pasta formāts"; valid = false }
-                if (nickname.isBlank()) { nicknameError = "Lietotājvārds ir obligāts"; valid = false }
-                if (firstName.isBlank()) { firstNameError = "Vārds ir obligāts"; valid = false }
-                if (lastName.isBlank()) { lastNameError = "Uzvārds ir obligāts"; valid = false }
-                if (password.isBlank()) { passwordError = "Parole ir obligāta"; valid = false }
-                else if (password.length < 8) { passwordError = "Parolei jābūt vismaz 8 simbolus garai"; valid = false }
-                if (confirmPassword.isBlank()) { confirmPasswordError = "Lūdzu apstipriniet paroli"; valid = false }
-                else if (password != confirmPassword) { confirmPasswordError = "Paroles nesakrīt"; valid = false }
-                if (valid) onRegister(email, password, nickname, firstName, lastName)
+                scope.launch {
+                    var valid = true
+
+                    if (email.isBlank()) { emailError = "E-pasts ir obligāts"; valid = false }
+                    else if (!email.matches(emailRegex)) { emailError = "Nederīgs e-pasta formāts"; valid = false }
+
+                    if (nickname.isBlank()) {
+                        nicknameError = "Lietotājvārds ir obligāts"
+                        valid = false
+                    } else {
+                        isChecking = true
+                        val available = onCheckNicknameAvailable(nickname.trim())
+                        isChecking = false
+                        if (!available) {
+                            nicknameError = "Šis lietotājvārds jau ir aizņemts"
+                            valid = false
+                        }
+                    }
+
+                    if (firstName.isBlank()) { firstNameError = "Vārds ir obligāts"; valid = false }
+                    if (lastName.isBlank()) { lastNameError = "Uzvārds ir obligāts"; valid = false }
+                    if (password.isBlank()) { passwordError = "Parole ir obligāta"; valid = false }
+                    else if (password.length < 8) { passwordError = "Parolei jābūt vismaz 8 simbolus garai"; valid = false }
+                    if (confirmPassword.isBlank()) { confirmPasswordError = "Lūdzu apstipriniet paroli"; valid = false }
+                    else if (password != confirmPassword) { confirmPasswordError = "Paroles nesakrīt"; valid = false }
+
+                    if (valid) onRegister(email, password, nickname, firstName, lastName)
+                }
             },
+            enabled = !isChecking,
             colors = ButtonDefaults.buttonColors(
                 containerColor = RyderAccent,
-                contentColor = Color.White
+                contentColor = Color.White,
+                disabledContainerColor = Color(0xFFCCCCCC)
             ),
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
-            Text("Izveidot kontu", fontWeight = FontWeight.Bold)
+            if (isChecking) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+            } else {
+                Text("Izveidot kontu", fontWeight = FontWeight.Bold)
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))

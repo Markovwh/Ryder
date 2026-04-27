@@ -14,4 +14,8 @@ actual class AuthServiceImpl : AuthService {
     ): String {
         error("iOS not implemented yet")
     }
+
+    override suspend fun isNicknameAvailable(nickname: String, excludeUid: String?): Result<Boolean> {
+        error("iOS not implemented yet")
+    }
 }

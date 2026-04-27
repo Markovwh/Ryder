@@ -112,6 +112,14 @@ fun EditProfileScreen(
                     errorMessage = null
                     scope.launch {
                         try {
+                            if (nickname.trim() != user.nickname) {
+                                val available = authService.isNicknameAvailable(nickname.trim(), excludeUid = user.uid)
+                                if (available.isFailure || available.getOrDefault(false) == false) {
+                                    nicknameError = "Šis lietotājvārds jau ir aizņemts"
+                                    isSaving = false
+                                    return@launch
+                                }
+                            }
                             val newPictureUrl = if (pickedUri != null) {
                                 repository.uploadProfilePicture(pickedUri!!, user.uid, context)
                             } else {
