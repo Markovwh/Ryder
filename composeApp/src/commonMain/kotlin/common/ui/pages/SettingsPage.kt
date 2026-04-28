@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
@@ -34,13 +35,82 @@ fun SettingsPage(
     onEditProfile: () -> Unit,
     onLogout: () -> Unit,
     onBack: () -> Unit,
-    onOpenAdmin: (() -> Unit)? = null
+    onOpenAdmin: (() -> Unit)? = null,
+    onDeleteAccount: () -> Unit = {}
 ) {
     val bg = AppColors.background
     val surface = AppColors.surface
     val textPrimary = AppColors.textPrimary
     val textSecondary = AppColors.textSecondary
     val dividerColor = AppColors.divider
+    val deleteRed = Color(0xFFE53935)
+
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var deleteConfirmText by remember { mutableStateOf("") }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false; deleteConfirmText = "" },
+            containerColor = AppColors.surface,
+            title = {
+                Text(
+                    text = "DZĒST KONTU",
+                    color = deleteRed,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Šī darbība ir neatgriezeniska. Visi tavi ieraksti, komentāri un dati tiks dzēsti.",
+                        color = textPrimary,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Ieraksti DZĒST, lai apstiprinātu:",
+                        color = textSecondary,
+                        fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = deleteConfirmText,
+                        onValueChange = { deleteConfirmText = it },
+                        placeholder = { Text("DZĒST") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = deleteRed,
+                            unfocusedBorderColor = dividerColor,
+                            focusedTextColor = textPrimary,
+                            unfocusedTextColor = textPrimary
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        deleteConfirmText = ""
+                        onDeleteAccount()
+                    },
+                    enabled = deleteConfirmText == "DZĒST",
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = deleteRed,
+                        disabledContainerColor = deleteRed.copy(alpha = 0.4f)
+                    )
+                ) {
+                    Text("DZĒST", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false; deleteConfirmText = "" }) {
+                    Text("Atcelt", color = textSecondary)
+                }
+            }
+        )
+    }
+
     Column(modifier = Modifier.fillMaxSize().background(bg)) {
         TopAppBar(
             title = { Text("Iestatījumi", color = Color.White) },
@@ -114,6 +184,7 @@ fun SettingsPage(
 
         // Admin section (visible to admins only)
         if (currentUser?.isAdmin == true && onOpenAdmin != null) {
+
             Spacer(modifier = Modifier.height(12.dp))
 
             SettingsSectionHeader(text = "Administrācija", textColor = textSecondary)
@@ -127,6 +198,20 @@ fun SettingsPage(
                     onClick = onOpenAdmin
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SettingsSectionHeader(text = "Bīstamā zona", textColor = deleteRed)
+
+        Column(modifier = Modifier.fillMaxWidth().background(surface)) {
+            SettingsRow(
+                icon = Icons.Default.Delete,
+                label = "DZĒST KONTU",
+                textColor = deleteRed,
+                iconColor = deleteRed,
+                onClick = { showDeleteDialog = true }
+            )
         }
 
     }

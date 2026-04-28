@@ -25,4 +25,6 @@ interface AuthService {
     suspend fun isNicknameAvailable(nickname: String, excludeUid: String? = null): Result<Boolean>
 
     fun logout()
+
+    suspend fun deleteAccount(userId: String): Result<Unit>
 }
