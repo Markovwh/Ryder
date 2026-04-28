@@ -3,6 +3,7 @@ package common.data
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 import common.model.User
 
@@ -182,6 +183,52 @@ class AuthServiceImplAndroid : AuthService {
 
     override fun logout() {
         auth.signOut()
+    }
+
+    override suspend fun deleteAccount(userId: String): Result<Unit> {
+        return try {
+            val storage = FirebaseStorage.getInstance()
+            val postsRef = firestore.collection("posts")
+            val likesRef = firestore.collection("likes")
+            val blocksRef = firestore.collection("blocks")
+
+            // Delete user's posts along with their likes and comments
+            val posts = postsRef.whereEqualTo("userId", userId).get().await()
+            for (postDoc in posts.documents) {
+                val postId = postDoc.id
+                val likes = likesRef.whereEqualTo("postId", postId).get().await()
+                likes.documents.forEach { it.reference.delete().await() }
+                val comments = postDoc.reference.collection("comments").get().await()
+                comments.documents.forEach { it.reference.delete().await() }
+                postDoc.reference.delete().await()
+            }
+
+            // Delete block documents involving this user
+            val blocksAsBlocker = blocksRef.whereEqualTo("blockerId", userId).get().await()
+            blocksAsBlocker.documents.forEach { it.reference.delete().await() }
+            val blocksAsBlocked = blocksRef.whereEqualTo("blockedId", userId).get().await()
+            blocksAsBlocked.documents.forEach { it.reference.delete().await() }
+
+            // Delete Storage files (best-effort)
+            try {
+                storage.reference.child("posts/$userId").listAll().await().items
+                    .forEach { try { it.delete().await() } catch (_: Exception) {} }
+                storage.reference.child("profiles/$userId").listAll().await().items
+                    .forEach { try { it.delete().await() } catch (_: Exception) {} }
+            } catch (_: Exception) {}
+
+            // Delete Firestore user document
+            firestore.collection("users").document(userId).delete().await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }.also {
+            // Delete Firebase Auth account — must happen before signOut and outside the
+            // main try-catch so a re-authentication error doesn't leave the user signed in
+            try { auth.currentUser?.delete()?.await() } catch (_: Exception) {}
+            auth.signOut()
+        }
     }
 }
 

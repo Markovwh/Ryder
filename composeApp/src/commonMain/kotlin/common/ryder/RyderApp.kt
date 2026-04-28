@@ -337,7 +337,20 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                                 navigateRoot(Screen.Login)
                             },
                             onBack = { navigateBack() },
-                            onOpenAdmin = { navigateTo(Screen.Admin) }
+                            onOpenAdmin = { navigateTo(Screen.Admin) },
+                            onDeleteAccount = {
+                                val uid = authService.getCurrentUserId()
+                                if (uid != null) {
+                                    scope.launch {
+                                        authService.deleteAccount(uid)
+                                        userPreferences?.setRememberMe(false)
+                                        currentUser = null
+                                        isGuest = false
+                                        isDarkTheme = false
+                                        navigateRoot(Screen.Login)
+                                    }
+                                }
+                            }
                         )
                     } else {
                         navigateRoot(Screen.Login)
