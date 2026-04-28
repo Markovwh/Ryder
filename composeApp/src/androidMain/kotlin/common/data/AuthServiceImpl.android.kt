@@ -2,6 +2,7 @@ package common.data
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
@@ -188,13 +189,16 @@ class AuthServiceImplAndroid : AuthService {
     override suspend fun deleteAccount(userId: String): Result<Unit> {
         return try {
             val storage = FirebaseStorage.getInstance()
+            val usersRef = firestore.collection("users")
             val postsRef = firestore.collection("posts")
             val likesRef = firestore.collection("likes")
+            val groupsRef = firestore.collection("groups")
+            val eventsRef = firestore.collection("events")
             val blocksRef = firestore.collection("blocks")
 
-            // Delete user's posts along with their likes and comments
-            val posts = postsRef.whereEqualTo("userId", userId).get().await()
-            for (postDoc in posts.documents) {
+            // 1. Delete all posts by this user (+ their likes and comments)
+            val userPosts = postsRef.whereEqualTo("userId", userId).get().await()
+            for (postDoc in userPosts.documents) {
                 val postId = postDoc.id
                 val likes = likesRef.whereEqualTo("postId", postId).get().await()
                 likes.documents.forEach { it.reference.delete().await() }
@@ -203,13 +207,74 @@ class AuthServiceImplAndroid : AuthService {
                 postDoc.reference.delete().await()
             }
 
-            // Delete block documents involving this user
+            // 2. Delete all groups owned by this user (+ their posts and likes)
+            val userGroups = groupsRef.whereEqualTo("ownerId", userId).get().await()
+            for (groupDoc in userGroups.documents) {
+                val groupPosts = postsRef.whereEqualTo("groupId", groupDoc.id).get().await()
+                for (postDoc in groupPosts.documents) {
+                    val likes = likesRef.whereEqualTo("postId", postDoc.id).get().await()
+                    likes.documents.forEach { it.reference.delete().await() }
+                    postDoc.reference.delete().await()
+                }
+                groupDoc.reference.delete().await()
+            }
+
+            // 3. Delete all events created by this user
+            val userEvents = eventsRef.whereEqualTo("creatorId", userId).get().await()
+            userEvents.documents.forEach { it.reference.delete().await() }
+
+            // 4. Remove this user from other users' following arrays and fix counts
+            val followers = usersRef.whereArrayContains("following", userId).get().await()
+            followers.documents.forEach { doc ->
+                doc.reference.update(
+                    "following", FieldValue.arrayRemove(userId),
+                    "followingCount", FieldValue.increment(-1)
+                ).await()
+            }
+
+            // 5. Decrement followerCount on everyone this user was following
+            val deletedUserDoc = usersRef.document(userId).get().await()
+            @Suppress("UNCHECKED_CAST")
+            val followingIds = deletedUserDoc.get("following") as? List<String> ?: emptyList()
+            followingIds.forEach { followedId ->
+                try {
+                    usersRef.document(followedId).update("followerCount", FieldValue.increment(-1)).await()
+                } catch (_: Exception) {}
+            }
+
+            // 6. Remove this user from pending followRequests on other users' documents
+            val pendingRequests = usersRef.whereArrayContains("followRequests", userId).get().await()
+            pendingRequests.documents.forEach { doc ->
+                doc.reference.update("followRequests", FieldValue.arrayRemove(userId)).await()
+            }
+
+            // 7. Remove this user from groups they were a member or admin of
+            val groupMemberships = groupsRef.whereArrayContains("memberIds", userId).get().await()
+            groupMemberships.documents.forEach { doc ->
+                doc.reference.update(
+                    "memberIds", FieldValue.arrayRemove(userId),
+                    "adminIds", FieldValue.arrayRemove(userId)
+                ).await()
+            }
+
+            // 8. Remove this user from events they were attending
+            val eventAttendances = eventsRef.whereArrayContains("attendeeIds", userId).get().await()
+            eventAttendances.documents.forEach { doc ->
+                doc.reference.update("attendeeIds", FieldValue.arrayRemove(userId)).await()
+            }
+
+            // 9. Delete comments this user left on other users' posts
+            val userComments = firestore.collectionGroup("comments")
+                .whereEqualTo("userId", userId).get().await()
+            userComments.documents.forEach { it.reference.delete().await() }
+
+            // 10. Delete block documents involving this user
             val blocksAsBlocker = blocksRef.whereEqualTo("blockerId", userId).get().await()
             blocksAsBlocker.documents.forEach { it.reference.delete().await() }
             val blocksAsBlocked = blocksRef.whereEqualTo("blockedId", userId).get().await()
             blocksAsBlocked.documents.forEach { it.reference.delete().await() }
 
-            // Delete Storage files (best-effort)
+            // 10. Delete Storage files (best-effort)
             try {
                 storage.reference.child("posts/$userId").listAll().await().items
                     .forEach { try { it.delete().await() } catch (_: Exception) {} }
@@ -217,15 +282,14 @@ class AuthServiceImplAndroid : AuthService {
                     .forEach { try { it.delete().await() } catch (_: Exception) {} }
             } catch (_: Exception) {}
 
-            // Delete Firestore user document
-            firestore.collection("users").document(userId).delete().await()
+            // 11. Delete the Firestore user document
+            usersRef.document(userId).delete().await()
 
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }.also {
-            // Delete Firebase Auth account — must happen before signOut and outside the
-            // main try-catch so a re-authentication error doesn't leave the user signed in
+            // Delete Firebase Auth account then sign out — runs regardless of Firestore result
             try { auth.currentUser?.delete()?.await() } catch (_: Exception) {}
             auth.signOut()
         }
