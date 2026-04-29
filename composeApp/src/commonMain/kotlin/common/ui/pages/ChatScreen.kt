@@ -43,6 +43,8 @@ import coil.compose.rememberAsyncImagePainter
 import common.data.MessageRepository
 import common.model.Message
 import common.model.User
+import common.data.NotificationRepository
+import common.model.AppNotification
 import common.ui.pages.components.AppColors
 import common.ui.pages.components.PostCardTimeFormatter
 import common.ui.pages.components.RyderAccent
@@ -59,6 +61,7 @@ fun ChatScreen(
     onOpenUser: ((String) -> Unit)? = null
 ) {
     val repo = remember { MessageRepository() }
+    val notifRepo = remember { NotificationRepository() }
     var messages by remember { mutableStateOf<List<Message>>(emptyList()) }
     var inputText by remember { mutableStateOf("") }
     var selectedUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
@@ -240,6 +243,21 @@ fun ChatScreen(
                                                 mediaUrls = mediaUrls
                                             )
                                         )
+                                    } catch (_: Exception) {
+                                        isSending = false
+                                        return@launch
+                                    }
+                                    // Notification send is best-effort — a failure must not
+                                    // surface as a message-send failure to the user.
+                                    try {
+                                        notifRepo.send(AppNotification(
+                                            recipientId = chat.otherUserId,
+                                            senderId = uid,
+                                            senderNickname = currentUser?.nickname ?: "",
+                                            senderPicture = currentUser?.profilePicture ?: "",
+                                            type = "message",
+                                            conversationId = chat.conversationId
+                                        ))
                                     } catch (_: Exception) {}
                                     isSending = false
                                 }

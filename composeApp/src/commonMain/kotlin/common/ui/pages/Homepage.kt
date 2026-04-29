@@ -5,10 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,7 +35,9 @@ fun Homepage(
     onRegisterClick: () -> Unit,
     isUserLoggedIn: Boolean,
     currentUser: User? = null,
-    onUserClick: ((String, String) -> Unit)? = null
+    onUserClick: ((String, String) -> Unit)? = null,
+    unreadNotifCount: Int = 0,
+    onNotificationsClick: (() -> Unit)? = null
 ) {
     val repository = remember { PostRepository() }
     val userRepo = remember { UserRepository() }
@@ -214,6 +218,36 @@ fun Homepage(
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
+
+                if (isUserLoggedIn && onNotificationsClick != null) {
+                    Box {
+                        IconButton(onClick = onNotificationsClick) {
+                            Icon(
+                                Icons.Default.Notifications,
+                                contentDescription = "Paziņojumi",
+                                tint = AppColors.textSecondary
+                            )
+                        }
+                        if (unreadNotifCount > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 8.dp, end = 8.dp)
+                                    .size(16.dp)
+                                    .background(Color(0xFFE53935), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (unreadNotifCount > 9) "9+" else unreadNotifCount.toString(),
+                                    color = Color.White,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    lineHeight = 9.sp
+                                )
+                            }
+                        }
+                    }
+                }
 
                 if (!isUserLoggedIn) {
                     TextButton(onClick = onLoginClick) {

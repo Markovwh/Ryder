@@ -37,8 +37,10 @@ import common.ui.pages.components.isVideoUrl
 import common.ui.pages.components.rememberVideoThumbnailLoader
 import common.data.MessageRepository
 import common.data.AdminRepository
+import common.data.NotificationRepository
 import common.data.PostRepository
 import common.data.UserRepository
+import common.model.AppNotification
 import common.model.Post
 import common.model.User
 import common.ui.pages.components.AppColors
@@ -59,6 +61,7 @@ fun UserProfilePage(
     val userRepo = remember { UserRepository() }
     val msgRepo = remember { MessageRepository() }
     val adminRepo = remember { AdminRepository() }
+    val notifRepo = remember { NotificationRepository() }
     val scope = rememberCoroutineScope()
 
     var user by remember { mutableStateOf<User?>(null) }
@@ -284,11 +287,25 @@ fun UserProfilePage(
                                                 targetIsPrivate -> {
                                                     userRepo.sendFollowRequest(cu, userId)
                                                     isRequested = true
+                                                    notifRepo.send(AppNotification(
+                                                        recipientId = userId,
+                                                        senderId = currentUser.uid,
+                                                        senderNickname = currentUser.nickname,
+                                                        senderPicture = currentUser.profilePicture ?: "",
+                                                        type = "follow_request"
+                                                    ))
                                                 }
                                                 else -> {
                                                     userRepo.follow(cu, userId)
                                                     isFollowing = true
                                                     followerCount += 1
+                                                    notifRepo.send(AppNotification(
+                                                        recipientId = userId,
+                                                        senderId = currentUser.uid,
+                                                        senderNickname = currentUser.nickname,
+                                                        senderPicture = currentUser.profilePicture ?: "",
+                                                        type = "follow"
+                                                    ))
                                                 }
                                             }
                                         } catch (_: Exception) {

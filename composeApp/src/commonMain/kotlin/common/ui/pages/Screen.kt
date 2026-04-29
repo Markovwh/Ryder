@@ -23,4 +23,5 @@ sealed class Screen {
     data class EventDetail(val eventId: String) : Screen()
     object Admin : Screen()
     object Settings : Screen()
+    object Notifications : Screen()
 }
