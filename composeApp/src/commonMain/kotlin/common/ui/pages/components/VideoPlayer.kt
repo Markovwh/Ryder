@@ -116,7 +116,7 @@ fun VideoPlayer(url: String, modifier: Modifier = Modifier) {
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (isPlaying) Icons.Default.PlayArrow else Icons.Default.Pause,
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(36.dp)
