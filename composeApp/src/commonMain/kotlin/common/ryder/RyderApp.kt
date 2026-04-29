@@ -8,8 +8,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import common.ui.pages.*
+import common.data.NotificationRepository
 import common.data.provideAuthService
 import common.data.UserPreferences
+import common.model.AppNotification
 import common.model.User
 import common.ui.pages.components.LocalIsDarkTheme
 import common.ui.pages.components.LocalHashtagClickHandler
@@ -28,6 +30,11 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
     var isGuest by remember { mutableStateOf(false) }
     var currentUser by remember { mutableStateOf<User?>(null) }
     var isDarkTheme by remember { mutableStateOf(false) }
+
+    val notifRepo = remember { NotificationRepository() }
+    var notifications by remember { mutableStateOf<List<AppNotification>>(emptyList()) }
+    // While the user is actively viewing the notifications screen every notification is "seen".
+    val unreadCount by remember { derivedStateOf { if (currentScreen == Screen.Notifications) 0 else notifications.count { !it.isRead } } }
 
     // Back stack — returns to the last screen
     val backStack = remember { mutableStateListOf<Screen>() }
@@ -55,6 +62,18 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
         }
     }
 
+    // Listen to the current user's notifications in real time
+    DisposableEffect(currentUser?.uid) {
+        val uid = currentUser?.uid
+        if (uid != null) {
+            val unsub = notifRepo.listen(uid) { notifications = it }
+            onDispose { unsub() }
+        } else {
+            notifications = emptyList()
+            onDispose {}
+        }
+    }
+
     // On startup: if remember me was enabled and Firebase still has an active session, skip login
     LaunchedEffect(Unit) {
         if (userPreferences != null) {
@@ -79,7 +98,8 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
             bottomBar = {
                 if (currentScreen !in listOf(
                         Screen.Registration, Screen.Login, Screen.EditProfile,
-                        Screen.CreateGroup, Screen.CreateEvent, Screen.Admin, Screen.Settings
+                        Screen.CreateGroup, Screen.CreateEvent, Screen.Admin, Screen.Settings,
+                        Screen.Notifications
                     )
                     && currentScreen !is Screen.Chat
                     && currentScreen !is Screen.UserProfile
@@ -173,7 +193,9 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     onRegisterClick = { navigateRoot(Screen.Registration) },
                     isUserLoggedIn = authService.getCurrentUserId() != null && !isGuest,
                     currentUser = if (!isGuest) currentUser else null,
-                    onUserClick = { uid, nickname -> navigateTo(Screen.UserProfile(uid, nickname)) }
+                    onUserClick = { uid, nickname -> navigateTo(Screen.UserProfile(uid, nickname)) },
+                    unreadNotifCount = unreadCount,
+                    onNotificationsClick = { navigateTo(Screen.Notifications) }
                 )
 
                 Screen.Search -> SearchPage(
@@ -382,6 +404,24 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                                 navigateBack()
                             },
                             onCancel = { navigateBack() }
+                        )
+                    } else {
+                        navigateRoot(Screen.Login)
+                    }
+                }
+
+                Screen.Notifications -> {
+                    val user = currentUser
+                    if (!isGuest && user != null) {
+                        LaunchedEffect(Unit) {
+                            notifications = notifications.map { it.copy(isRead = true) }
+                            notifRepo.markAllAsRead(user.uid)
+                        }
+                        NotificationsPage(
+                            currentUser = user,
+                            onBack = { navigateBack() },
+                            onOpenUser = { uid, nickname -> navigateTo(Screen.UserProfile(uid, nickname)) },
+                            onOpenChat = { chatScreen -> navigateTo(chatScreen) }
                         )
                     } else {
                         navigateRoot(Screen.Login)

@@ -32,7 +32,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.rememberAsyncImagePainter
 import common.data.AdminRepository
+import common.data.NotificationRepository
 import common.data.PostRepository
+import common.model.AppNotification
 import common.model.Comment
 import common.model.Post
 import common.model.User
@@ -49,6 +51,7 @@ fun PostDetailDialog(
 ) {
     val repository = remember { PostRepository() }
     val adminRepo = remember { AdminRepository() }
+    val notifRepo = remember { NotificationRepository() }
     var isLiked by remember { mutableStateOf(false) }
     var likeCount by remember { mutableStateOf(post.likeCount) }
     var comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
@@ -404,7 +407,22 @@ fun PostDetailDialog(
                                         )
                                         comments = comments + saved
                                         listState.animateScrollToItem(Int.MAX_VALUE)
-                                    } catch (_: Exception) {}
+                                    } catch (_: Exception) {
+                                        return@launch
+                                    }
+                                    if (post.userId != currentUser.uid) {
+                                        try {
+                                            notifRepo.send(AppNotification(
+                                                recipientId = post.userId,
+                                                senderId = currentUser.uid,
+                                                senderNickname = currentUser.nickname,
+                                                senderPicture = currentUser.profilePicture ?: "",
+                                                type = "comment",
+                                                postId = post.id,
+                                                commentPreview = text.take(80)
+                                            ))
+                                        } catch (_: Exception) {}
+                                    }
                                 }
                             }
                         ) {

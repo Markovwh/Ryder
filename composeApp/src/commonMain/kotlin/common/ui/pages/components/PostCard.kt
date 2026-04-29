@@ -31,7 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import common.data.NotificationRepository
 import common.data.PostRepository
+import common.model.AppNotification
 import common.model.Comment
 import common.model.Post
 import common.model.User
@@ -382,6 +384,7 @@ private fun CommentsSheet(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val adminRepo = remember { common.data.AdminRepository() }
+    val notifRepo = remember { NotificationRepository() }
 
     LaunchedEffect(post.id) {
         isLoading = true
@@ -508,7 +511,22 @@ private fun CommentsSheet(
                                             )
                                         )
                                         comments = comments + saved
-                                    } catch (_: Exception) {}
+                                    } catch (_: Exception) {
+                                        return@launch
+                                    }
+                                    if (post.userId != currentUser.uid) {
+                                        try {
+                                            notifRepo.send(AppNotification(
+                                                recipientId = post.userId,
+                                                senderId = currentUser.uid,
+                                                senderNickname = currentUser.nickname,
+                                                senderPicture = currentUser.profilePicture ?: "",
+                                                type = "comment",
+                                                postId = post.id,
+                                                commentPreview = text.take(80)
+                                            ))
+                                        } catch (_: Exception) {}
+                                    }
                                 }
                             }
                         }
