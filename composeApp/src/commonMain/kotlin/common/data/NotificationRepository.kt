@@ -32,6 +32,10 @@ class NotificationRepository {
         return { reg.remove() }
     }
 
+    suspend fun delete(notificationId: String) {
+        try { ref.document(notificationId).delete().await() } catch (_: Exception) {}
+    }
+
     suspend fun markAllAsRead(userId: String) {
         try {
             // Single-field query only — avoids requiring a composite Firestore index.

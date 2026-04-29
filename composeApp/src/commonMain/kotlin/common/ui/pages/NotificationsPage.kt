@@ -1,11 +1,13 @@
 package common.ui.pages
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -19,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import common.data.NotificationRepository
+import common.data.UserRepository
 import common.model.AppNotification
 import common.model.User
 import common.ui.pages.components.AppColors
@@ -36,12 +39,13 @@ fun NotificationsPage(
     onOpenChat: (Screen.Chat) -> Unit
 ) {
     val repo = remember { NotificationRepository() }
+    val userRepo = remember { UserRepository() }
     val scope = rememberCoroutineScope()
     var notifications by remember { mutableStateOf<List<AppNotification>>(emptyList()) }
+    var handlingIds by remember { mutableStateOf<Set<String>>(emptySet()) }
 
     DisposableEffect(currentUser.uid) {
         val unsub = repo.listen(currentUser.uid) { list ->
-            // Opening this page means all visible notifications are seen — show them as read immediately.
             notifications = list.map { it.copy(isRead = true) }
         }
         onDispose { unsub() }
@@ -76,6 +80,7 @@ fun NotificationsPage(
                 items(notifications, key = { it.id }) { notif ->
                     NotificationItem(
                         notification = notif,
+                        isHandling = handlingIds.contains(notif.id),
                         onClick = {
                             scope.launch {
                                 when (notif.type) {
@@ -90,7 +95,33 @@ fun NotificationsPage(
                                     else -> onOpenUser(notif.senderId, notif.senderNickname)
                                 }
                             }
-                        }
+                        },
+                        onAcceptRequest = if (notif.type == "follow_request") {
+                            {
+                                handlingIds = handlingIds + notif.id
+                                scope.launch {
+                                    try {
+                                        userRepo.acceptFollowRequest(currentUser.uid, notif.senderId)
+                                        repo.delete(notif.id)
+                                    } catch (_: Exception) {
+                                        handlingIds = handlingIds - notif.id
+                                    }
+                                }
+                            }
+                        } else null,
+                        onDeclineRequest = if (notif.type == "follow_request") {
+                            {
+                                handlingIds = handlingIds + notif.id
+                                scope.launch {
+                                    try {
+                                        userRepo.declineFollowRequest(currentUser.uid, notif.senderId)
+                                        repo.delete(notif.id)
+                                    } catch (_: Exception) {
+                                        handlingIds = handlingIds - notif.id
+                                    }
+                                }
+                            }
+                        } else null
                     )
                     HorizontalDivider(color = AppColors.divider, thickness = 0.5.dp)
                 }
@@ -100,7 +131,13 @@ fun NotificationsPage(
 }
 
 @Composable
-private fun NotificationItem(notification: AppNotification, onClick: () -> Unit) {
+private fun NotificationItem(
+    notification: AppNotification,
+    isHandling: Boolean,
+    onClick: () -> Unit,
+    onAcceptRequest: (() -> Unit)? = null,
+    onDeclineRequest: (() -> Unit)? = null
+) {
     val bg = if (!notification.isRead) AppColors.surface else AppColors.background
 
     Row(
@@ -144,6 +181,38 @@ private fun NotificationItem(notification: AppNotification, onClick: () -> Unit)
                 color = AppColors.textSecondary,
                 fontSize = 12.sp
             )
+
+            if (onAcceptRequest != null && onDeclineRequest != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                if (isHandling) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = RyderAccent
+                    )
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onAcceptRequest,
+                            colors = ButtonDefaults.buttonColors(containerColor = RyderAccent),
+                            shape = RoundedCornerShape(6.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            Text("Apstiprināt", fontSize = 12.sp, color = Color.White)
+                        }
+                        OutlinedButton(
+                            onClick = onDeclineRequest,
+                            shape = RoundedCornerShape(6.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+                            modifier = Modifier.height(30.dp),
+                            border = BorderStroke(1.dp, AppColors.inputBorder)
+                        ) {
+                            Text("Noraidīt", fontSize = 12.sp, color = AppColors.textPrimary)
+                        }
+                    }
+                }
+            }
         }
     }
 }

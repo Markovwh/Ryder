@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import common.ui.pages.*
 import common.data.NotificationRepository
+import common.data.UserRepository
 import common.data.provideAuthService
 import common.data.UserPreferences
 import common.model.AppNotification
@@ -32,9 +33,15 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
     var isDarkTheme by remember { mutableStateOf(false) }
 
     val notifRepo = remember { NotificationRepository() }
+    val userRepo = remember { UserRepository() }
     var notifications by remember { mutableStateOf<List<AppNotification>>(emptyList()) }
-    // While the user is actively viewing the notifications screen every notification is "seen".
-    val unreadCount by remember { derivedStateOf { if (currentScreen == Screen.Notifications) 0 else notifications.count { !it.isRead } } }
+    // Badge count: how many notifications arrived after the user last viewed the page.
+    val unreadCount by remember {
+        derivedStateOf {
+            if (currentScreen == Screen.Notifications) 0
+            else notifications.count { it.createdAt > (currentUser?.lastNotifViewedAt ?: 0L) }
+        }
+    }
 
     // Back stack — returns to the last screen
     val backStack = remember { mutableStateListOf<Screen>() }
@@ -414,8 +421,11 @@ fun RyderApp(userPreferences: UserPreferences? = null) {
                     val user = currentUser
                     if (!isGuest && user != null) {
                         LaunchedEffect(Unit) {
-                            notifications = notifications.map { it.copy(isRead = true) }
-                            notifRepo.markAllAsRead(user.uid)
+                            val now = System.currentTimeMillis()
+                            // Update locally so the badge clears immediately on this screen.
+                            currentUser = user.copy(lastNotifViewedAt = now)
+                            // Persist the timestamp on the user's own document.
+                            userRepo.updateLastNotifViewedAt(user.uid, now)
                         }
                         NotificationsPage(
                             currentUser = user,
