@@ -154,8 +154,21 @@ class MessageRepository {
         conversationsRef.document(conversationId).delete().await()
     }
 
-    suspend fun uploadMessageMedia(uri: Uri, senderId: String): String {
-        val filename = "${System.currentTimeMillis()}_${uri.lastPathSegment}"
+    suspend fun uploadMessageMedia(uri: Uri, senderId: String, context: android.content.Context): String {
+        val mimeType = context.contentResolver.getType(uri) ?: ""
+        val extension = when {
+            mimeType.startsWith("video/") -> when (mimeType) {
+                "video/quicktime" -> ".mov"
+                "video/webm"      -> ".webm"
+                "video/3gpp"      -> ".3gp"
+                else              -> ".mp4"
+            }
+            mimeType == "image/png"  -> ".png"
+            mimeType == "image/gif"  -> ".gif"
+            mimeType == "image/webp" -> ".webp"
+            else                     -> ".jpg"
+        }
+        val filename = "${System.currentTimeMillis()}_${uri.lastPathSegment}$extension"
         val ref = storage.reference.child("messages/$senderId/$filename")
         ref.putFile(uri).await()
         return ref.downloadUrl.await().toString()

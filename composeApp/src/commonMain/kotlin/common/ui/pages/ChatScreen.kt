@@ -10,6 +10,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,6 +29,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -45,6 +47,8 @@ import common.ui.pages.components.AppColors
 import common.ui.pages.components.PostCardTimeFormatter
 import common.ui.pages.components.RyderAccent
 import common.ui.pages.components.UserAvatar
+import common.ui.pages.components.VideoPlayer
+import common.ui.pages.components.isVideoUrl
 import kotlinx.coroutines.launch
 
 @Composable
@@ -64,6 +68,7 @@ fun ChatScreen(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
+    val context = LocalContext.current
     val bg = AppColors.background
     val surface = AppColors.surface
     val textPrimary = AppColors.textPrimary
@@ -225,7 +230,7 @@ fun ChatScreen(
                                 scope.launch {
                                     try {
                                         val mediaUrls = uris.map { uri ->
-                                            repo.uploadMessageMedia(uri, uid)
+                                            repo.uploadMessageMedia(uri, uid, context)
                                         }
                                         repo.sendMessage(
                                             chat.conversationId,
@@ -326,6 +331,7 @@ private fun MessageBubble(
     }
     var showMenu by remember { mutableStateOf(false) }
     var showSharedPostDialog by remember { mutableStateOf(false) }
+    var previewUrl by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -357,16 +363,31 @@ private fun MessageBubble(
                 }
                 if (message.mediaUrls.isNotEmpty()) {
                     message.mediaUrls.forEach { url ->
-                        Image(
-                            painter = rememberAsyncImagePainter(url),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 200.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(AppColors.avatarPlaceholder),
-                            contentScale = ContentScale.Crop
-                        )
+                        if (url.isVideoUrl()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 200.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                            ) {
+                                VideoPlayer(url = url, modifier = Modifier.fillMaxSize())
+                                // Transparent overlay: intercepts tap to open preview
+                                // (VideoPlayer's own play/pause is handled inside the dialog)
+                                Box(modifier = Modifier.fillMaxSize().clickable { previewUrl = url })
+                            }
+                        } else {
+                            Image(
+                                painter = rememberAsyncImagePainter(url),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 200.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(AppColors.avatarPlaceholder)
+                                    .clickable { previewUrl = url },
+                                contentScale = ContentScale.Crop
+                            )
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                     }
                 }
@@ -411,6 +432,10 @@ private fun MessageBubble(
                 }
             } else null
         )
+    }
+
+    previewUrl?.let { url ->
+        MediaPreviewDialog(url = url, onDismiss = { previewUrl = null })
     }
 }
 
@@ -580,6 +605,61 @@ private fun SharedPostDetailDialog(
                     fontSize = 13.sp,
                     modifier = Modifier.padding(14.dp)
                 )
+            }
+        }
+    }
+}
+
+// ── Media preview dialog ───────────────────────────────────────────────────────
+
+@Composable
+private fun MediaPreviewDialog(url: String, onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.92f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { onDismiss() },
+            contentAlignment = Alignment.Center
+        ) {
+            if (url.isVideoUrl()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .fillMaxHeight(0.85f)
+                        .clip(RoundedCornerShape(12.dp))
+                ) {
+                    VideoPlayer(url = url, modifier = Modifier.fillMaxSize())
+                }
+            } else {
+                Image(
+                    painter = rememberAsyncImagePainter(url),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .fillMaxHeight(0.85f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {},
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Aizvērt", tint = Color.White)
             }
         }
     }
