@@ -25,6 +25,8 @@ import common.ui.pages.components.AppColors
 import common.ui.pages.components.PostCard
 import common.ui.pages.components.RyderAccent
 
+enum class SortOrder { NewestFirst, OldestFirst, MostPopular, LeastPopular }
+
 @Composable
 fun Homepage(
     onLoginClick: () -> Unit,
@@ -41,6 +43,8 @@ fun Homepage(
 
     var friendsOnly by remember { mutableStateOf(false) }
     var showFilterMenu by remember { mutableStateOf(false) }
+    var sortOrder by remember { mutableStateOf(SortOrder.NewestFirst) }
+    var showSortMenu by remember { mutableStateOf(false) }
 
     // Fetch who the current user follows and who follows them so the feed can
     // apply "Privāts" / "Draugi" visibility rules correctly.
@@ -67,13 +71,19 @@ fun Homepage(
         onDispose { unsub() }
     }
 
-    // Client-side friends filter: mutual follows + own posts
-    val displayedPosts: List<Post> = remember(posts, friendsOnly, followingIds, followerIds, currentUser) {
-        if (friendsOnly && currentUser != null) {
+    // Client-side friends filter + sort
+    val displayedPosts: List<Post> = remember(posts, friendsOnly, followingIds, followerIds, currentUser, sortOrder) {
+        val filtered = if (friendsOnly && currentUser != null) {
             val mutualIds = followingIds.intersect(followerIds)
             posts.filter { it.userId == currentUser.uid || it.userId in mutualIds }
         } else {
             posts
+        }
+        when (sortOrder) {
+            SortOrder.NewestFirst  -> filtered
+            SortOrder.OldestFirst  -> filtered.reversed()
+            SortOrder.MostPopular  -> filtered.sortedByDescending { it.likeCount }
+            SortOrder.LeastPopular -> filtered.sortedBy { it.likeCount }
         }
     }
 
@@ -146,6 +156,61 @@ fun Homepage(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Box {
+                        Surface(
+                            onClick = { showSortMenu = true },
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.Transparent,
+                            border = BorderStroke(1.dp, AppColors.inputBorder)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = when (sortOrder) {
+                                        SortOrder.NewestFirst  -> "Jaunākie"
+                                        SortOrder.OldestFirst  -> "Vecākie"
+                                        SortOrder.MostPopular  -> "Populārākie"
+                                        SortOrder.LeastPopular -> "Mazāk populāri"
+                                    },
+                                    color = AppColors.textSecondary,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(Modifier.width(2.dp))
+                                Icon(
+                                    Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                    tint = AppColors.textSecondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false },
+                            containerColor = AppColors.surface
+                        ) {
+                            listOf(
+                                SortOrder.NewestFirst  to "Jaunākie",
+                                SortOrder.OldestFirst  to "Vecākie",
+                                SortOrder.MostPopular  to "Populārākie",
+                                SortOrder.LeastPopular to "Mazāk populāri"
+                            ).forEach { (order, label) ->
+                                DropdownMenuItem(
+                                    text = { Text(label, color = AppColors.textPrimary) },
+                                    trailingIcon = if (sortOrder == order) {
+                                        { Icon(Icons.Default.Check, null, tint = RyderAccent) }
+                                    } else null,
+                                    onClick = { sortOrder = order; showSortMenu = false }
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -168,7 +233,7 @@ fun Homepage(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                items(displayedPosts) { post ->
+                items(displayedPosts, key = { it.id }) { post ->
                     PostCard(post = post, currentUser = currentUser, onUserClick = onUserClick)
                 }
             }
