@@ -25,5 +25,6 @@ data class User(
     var isAdmin: Boolean = false,
     @get:PropertyName("isBanned") @set:PropertyName("isBanned")
     var isBanned: Boolean = false,
-    val experienceYears: Int = 0
+    val experienceYears: Int = 0,
+    val lastNotifViewedAt: Long = 0L
 )

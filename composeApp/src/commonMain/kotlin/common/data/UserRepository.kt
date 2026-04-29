@@ -10,13 +10,12 @@ class UserRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val usersRef = firestore.collection("users")
     private val blocksRef = firestore.collection("blocks")
+    private val followRequestsRef = firestore.collection("followRequests")
 
     private fun blockDocId(blockerId: String, blockedId: String) = "${blockerId}_${blockedId}"
+    private fun requestDocId(requesterId: String, targetId: String) = "${requesterId}_${targetId}"
 
     // ── Follow ────────────────────────────────────────────────────────────────
-    // Follow relationships are stored as a `following` array on each user's own
-    // document. This way a user only ever writes to their own document, which
-    // works with standard Firestore auth rules without any extra rule additions.
 
     suspend fun isFollowing(currentUserId: String, targetUserId: String): Boolean {
         val doc = usersRef.document(currentUserId).get().await()
@@ -26,12 +25,10 @@ class UserRepository {
     }
 
     suspend fun follow(currentUserId: String, targetUserId: String) {
-        // Write only to the current user's own document
         usersRef.document(currentUserId).update(
             "following", FieldValue.arrayUnion(targetUserId),
             "followingCount", FieldValue.increment(1)
         ).await()
-        // Best-effort: update target's follower count (may fail if rules restrict cross-user writes)
         try {
             usersRef.document(targetUserId).update("followerCount", FieldValue.increment(1)).await()
         } catch (_: Exception) {}
@@ -48,48 +45,43 @@ class UserRepository {
     }
 
     // ── Follow requests (for private profiles) ───────────────────────────────
+    // Stored in a separate `followRequests` collection so the requester writes
+    // only their own document — no cross-user document write required.
 
-    suspend fun hasSentFollowRequest(requesterId: String, targetId: String): Boolean {
-        val doc = usersRef.document(targetId).get().await()
-        @Suppress("UNCHECKED_CAST")
-        val requests = doc.get("followRequests") as? List<String>
-        return requests?.contains(requesterId) == true
-    }
+    suspend fun hasSentFollowRequest(requesterId: String, targetId: String): Boolean =
+        followRequestsRef.document(requestDocId(requesterId, targetId)).get().await().exists()
 
     suspend fun sendFollowRequest(requesterId: String, targetId: String) {
-        usersRef.document(targetId).update(
-            "followRequests", FieldValue.arrayUnion(requesterId)
+        followRequestsRef.document(requestDocId(requesterId, targetId)).set(
+            mapOf(
+                "requesterId" to requesterId,
+                "targetId" to targetId,
+                "createdAt" to System.currentTimeMillis()
+            )
         ).await()
     }
 
     suspend fun cancelFollowRequest(requesterId: String, targetId: String) {
-        usersRef.document(targetId).update(
-            "followRequests", FieldValue.arrayRemove(requesterId)
-        ).await()
+        followRequestsRef.document(requestDocId(requesterId, targetId)).delete().await()
     }
 
     suspend fun acceptFollowRequest(targetId: String, requesterId: String) {
-        // Perform the actual follow
+        // Follow first — if this fails the request doc stays so the user can retry.
         follow(requesterId, targetId)
-        // Remove from pending requests
-        usersRef.document(targetId).update(
-            "followRequests", FieldValue.arrayRemove(requesterId)
-        ).await()
+        // Delete the request only after the follow is confirmed.
+        followRequestsRef.document(requestDocId(requesterId, targetId)).delete().await()
     }
 
     suspend fun declineFollowRequest(targetId: String, requesterId: String) {
-        usersRef.document(targetId).update(
-            "followRequests", FieldValue.arrayRemove(requesterId)
-        ).await()
+        followRequestsRef.document(requestDocId(requesterId, targetId)).delete().await()
     }
 
-    suspend fun getFollowRequestUsers(userId: String): List<User> {
-        val doc = usersRef.document(userId).get().await()
-        @Suppress("UNCHECKED_CAST")
-        val ids = (doc.get("followRequests") as? List<String>) ?: return emptyList()
-        return ids.mapNotNull { id ->
-            try { usersRef.document(id).get().await().toObject(User::class.java) } catch (_: Exception) { null }
-        }
+    // ── Notification timestamp ────────────────────────────────────────────────
+
+    suspend fun updateLastNotifViewedAt(userId: String, timestamp: Long) {
+        try {
+            usersRef.document(userId).update("lastNotifViewedAt", timestamp).await()
+        } catch (_: Exception) {}
     }
 
     // ── Block ─────────────────────────────────────────────────────────────────
@@ -119,7 +111,6 @@ class UserRepository {
         usersRef.whereArrayContains("following", userId).get().await().size()
 
     suspend fun getFollowers(userId: String): List<User> {
-        // Query all users whose `following` array contains this userId
         val snap = usersRef.whereArrayContains("following", userId).get().await()
         return snap.documents.mapNotNull {
             try { it.toObject(User::class.java) } catch (_: Exception) { null }
@@ -142,7 +133,6 @@ class UserRepository {
             }
         }
 
-        // Prune dead UIDs from the following array and fix the stored count
         if (deadIds.isNotEmpty()) {
             val ref = usersRef.document(userId)
             deadIds.forEach { deadId ->
@@ -156,9 +146,16 @@ class UserRepository {
         return users
     }
 
-    /** Returns the UIDs of every user who follows [userId]. */
     suspend fun getFollowerIds(userId: String): Set<String> {
         val snap = usersRef.whereArrayContains("following", userId).get().await()
         return snap.documents.mapNotNull { it.getString("uid") }.toSet()
+    }
+
+    suspend fun getFollowRequestUsers(userId: String): List<User> {
+        val snap = followRequestsRef.whereEqualTo("targetId", userId).get().await()
+        val requesterIds = snap.documents.mapNotNull { it.getString("requesterId") }
+        return requesterIds.mapNotNull { id ->
+            try { usersRef.document(id).get().await().toObject(User::class.java) } catch (_: Exception) { null }
+        }
     }
 }
