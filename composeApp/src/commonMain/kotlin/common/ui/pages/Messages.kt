@@ -344,6 +344,7 @@ fun MessagesPage(
             },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
                 .padding(end = 24.dp, bottom = 96.dp),
             containerColor = RyderAccent
         ) {
