@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "714387890641",
+    "project_id": "ryder-2e186",
+    "storage_bucket": "ryder-2e186.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:714387890641:android:fa276877aacac21be440f0",
+        "android_client_info": {
+          "package_name": "com.example.ryder"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqaBvgU_jfvDgS8kAoFg_XL2wHrAJufNY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
